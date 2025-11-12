@@ -1,6 +1,7 @@
 import express from "express";
 import { connectDB } from "./config.js";
 import dotenv from "dotenv";
+import universityRoutes from "./routes/universityRoutes.js"; // ✅ Step 1: Import routes
 
 dotenv.config();
 
@@ -9,6 +10,10 @@ const port = process.env.PORT || 5000;
 
 app.use(express.json());
 
+// ✅ Step 2: Use the university routes
+app.use("/api/universities", universityRoutes);
+
+// (Optional) You can keep your sample route for testing:
 import University from "./models/University.js";
 
 app.get("/add-sample", async (req, res) => {
@@ -27,7 +32,6 @@ app.get("/add-sample", async (req, res) => {
     res.status(500).send("Error adding sample university");
   }
 });
-
 
 app.get("/", (req, res) => {
   res.send("PakUniInfo backend is running successfully!");
