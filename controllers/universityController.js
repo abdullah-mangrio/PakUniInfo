@@ -2,16 +2,80 @@ import mongoose from "mongoose";
 import University from "../models/University.js";
 
 
-// GET /api/universities  -> get all universities
+
+
+// GET /api/universities  -> get all universities (with optional filters)
 export const getUniversities = async (req, res) => {
   try {
-    const universities = await University.find();
-    return res.json(universities);
+    const { province, location, program, name, sortBy, sortOrder, page, limit } = req.query;
+
+    const filter = {};
+
+    // province filter (case-insensitive)
+    if (province) {
+      filter.province = { $regex: `^${province}$`, $options: "i" };
+    }
+
+    // location filter (case-insensitive)
+    if (location) {
+      filter.location = { $regex: `^${location}$`, $options: "i" };
+    }
+
+    // program filter (case-insensitive)
+    if (program) {
+      filter.programs = { $regex: program, $options: "i" };
+    }
+
+    // name search (case-insensitive, partial)
+    if (name) {
+      filter.name = { $regex: name, $options: "i" };
+    }
+
+    // Sorting
+    const allowedSortFields = ["name", "ranking", "location", "province"];
+    let sort = {};
+
+    if (sortBy && allowedSortFields.includes(sortBy)) {
+      const order = sortOrder === "desc" ? -1 : 1; // default asc
+      sort[sortBy] = order;
+    }
+
+    // ⭐ Pagination
+    const pageNumber = Number(page) || 1;      // default: page 1
+    const limitNumber = Number(limit) || 10;   // default: 10 per page
+    const skip = (pageNumber - 1) * limitNumber;
+
+    // Total count (for this filter)
+    const total = await University.countDocuments(filter);
+
+    // Get paginated results
+    const universities = await University.find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(limitNumber);
+
+    return res.json({
+      currentPage: pageNumber,
+      totalPages: Math.ceil(total / limitNumber),
+      totalResults: total,
+      results: universities
+    });
+
   } catch (err) {
     console.error("Error in getUniversities:", err.message);
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+
+
+
+
+
+
+//------------------------------------------------------------ADD SECTION--------------------------------------------------------------------------
+
+
 
 // POST /api/universities  -> add a new university
 export const addUniversity = async (req, res) => {
@@ -29,6 +93,9 @@ export const addUniversity = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+
+//---------------------------------------------------------------GET UNI BY ID -----------------------------------------------------------------------
 
 // GET /api/universities/:id  -> get one by ID
 export const getUniversityById = async (req, res) => {
@@ -52,6 +119,9 @@ export const getUniversityById = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+
+//-----------------------------------------------------------UPDATE BY ID---------------------------------------------------------------------------
 
 
 
@@ -86,7 +156,7 @@ export const updateUniversity = async (req, res) => {
   }
 };
 
-
+//-------------------------------------------------------DELETE BY ID-------------------------------------------------------------------------------
 
 // DELETE /api/universities/:id  -> delete by ID
 export const deleteUniversity = async (req, res) => {
