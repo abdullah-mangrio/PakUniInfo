@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-const API_BASE_URL = "http://localhost:5000/api";
+const PAGE_SIZE = 10;
 
-function ExploreUniversities() {
+export default function ExploreUniversities() {
+  const navigate = useNavigate();
   const [universities, setUniversities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
@@ -15,126 +17,212 @@ function ExploreUniversities() {
         setLoading(true);
         setError("");
 
-        const response = await fetch(
-          `${API_BASE_URL}/universities?page=${currentPage}&limit=10`
+        const res = await fetch(
+          `http://localhost:5000/api/universities?page=${page}&limit=${PAGE_SIZE}`
         );
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch universities");
+        if (!res.ok) {
+          throw new Error(`Request failed with status ${res.status}`);
         }
 
-        const data = await response.json();
+        const data = await res.json();
 
-        // Our backend returns { currentPage, totalPages, results: [...] }
         setUniversities(data.results || []);
-        setCurrentPage(data.currentPage || 1);
         setTotalPages(data.totalPages || 1);
       } catch (err) {
-        setError(err.message || "Something went wrong");
+        console.error("Error fetching universities:", err);
+        setError(err.message || "Failed to fetch");
       } finally {
         setLoading(false);
       }
     };
 
     fetchUniversities();
-  }, [currentPage]);
+  }, [page]);
 
-  const handleNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage((prev) => prev + 1);
-    }
+  const handlePrev = () => {
+    setPage((p) => Math.max(1, p - 1));
   };
 
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage((prev) => prev - 1);
-    }
+  const handleNext = () => {
+    setPage((p) => Math.min(totalPages, p + 1));
   };
 
   return (
     <div>
-      <h2>Explore Universities</h2>
-      <p>Listing universities from your backend API.</p>
+      <header style={{ marginBottom: "1.5rem" }}>
+        <h1
+          style={{
+            fontSize: "1.6rem",
+            fontWeight: 700,
+            marginBottom: "0.35rem",
+            color: "#0f172a",
+          }}
+        >
+          Explore Universities
+        </h1>
+        <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
+          Browse universities from the PakUniInfo database. Soon you'll be able
+          to filter by province, city, programs, and ranking.
+        </p>
+      </header>
 
-      {loading && <p>Loading universities...</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {!loading && !error && universities.length === 0 && (
-        <p>No universities found.</p>
+      {/* STATUS SECTION */}
+      {loading && (
+        <p style={{ color: "#0f172a", fontSize: "0.95rem" }}>
+          Loading universities...
+        </p>
       )}
 
-      <div style={{ display: "grid", gap: "1rem", marginTop: "1.5rem" }}>
+      {!loading && error && (
+        <p style={{ color: "crimson", fontSize: "0.95rem" }}>{error}</p>
+      )}
+
+      {!loading && !error && universities.length === 0 && (
+        <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
+          No universities found. Try adding some using the backend.
+        </p>
+      )}
+
+      {/* LIST OF UNIVERSITIES */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "1rem",
+          marginTop: "1rem",
+        }}
+      >
         {universities.map((uni) => (
-          <div
+          <article
             key={uni._id}
+            onClick={() => navigate(`/universities/${uni._id}`)}
             style={{
-              border: "1px solid #1f2937",
-              borderRadius: "0.5rem",
-              padding: "1rem",
+              borderRadius: "0.75rem",
+              padding: "1.25rem 1.5rem",
               backgroundColor: "#020617",
+              color: "white",
+              boxShadow: "0 8px 20px rgba(15,23,42,0.6)",
+              cursor: "pointer",
+              transition: "transform 0.12s ease, box-shadow 0.12s ease",
             }}
           >
-            <h3 style={{ marginBottom: "0.5rem" }}>{uni.name}</h3>
-            <p style={{ margin: "0.2rem 0" }}>
-              <strong>Location:</strong> {uni.location}, {uni.province}
+            <h2
+              style={{
+                margin: 0,
+                marginBottom: "0.4rem",
+                fontSize: "1.1rem",
+                fontWeight: 700,
+              }}
+            >
+              {uni.name || "Unnamed University"}
+            </h2>
+
+            <p style={{ margin: 0, fontSize: "0.9rem", color: "#cbd5f5" }}>
+              Location:{" "}
+              <span style={{ color: "#e5e7eb" }}>
+                {uni.location || uni.city || "Not specified"}
+                {uni.province ? `, ${uni.province}` : ""}
+              </span>
             </p>
-            {uni.ranking && (
-              <p style={{ margin: "0.2rem 0" }}>
-                <strong>Ranking:</strong> {uni.ranking}
-              </p>
-            )}
-            {uni.programs && uni.programs.length > 0 && (
-              <p style={{ margin: "0.2rem 0" }}>
-                <strong>Programs:</strong> {uni.programs.join(", ")}
-              </p>
-            )}
+
+            <p style={{ margin: "0.15rem 0", fontSize: "0.9rem" }}>
+              Ranking:{" "}
+              <span style={{ fontWeight: 600 }}>
+                {uni.ranking != null ? uni.ranking : "N/A"}
+              </span>
+            </p>
+
+            <p style={{ margin: "0.15rem 0 0.35rem", fontSize: "0.9rem" }}>
+              Programs:{" "}
+              {Array.isArray(uni.programs) && uni.programs.length > 0 ? (
+                <span>{uni.programs.join(", ")}</span>
+              ) : (
+                <span>Not listed</span>
+              )}
+            </p>
+
             {uni.website && (
-              <p style={{ margin: "0.2rem 0" }}>
-                <a
-                  href={uni.website}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{ color: "#38bdf8" }}
-                >
-                  Visit Website
-                </a>
-              </p>
+              <a
+                href={uni.website}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: "inline-block",
+                  marginTop: "0.4rem",
+                  fontSize: "0.88rem",
+                  color: "#4ade80",
+                  textDecoration: "underline",
+                }}
+                onClick={(e) => e.stopPropagation()} // so link click doesn't trigger card navigation
+              >
+                Visit Website
+              </a>
             )}
-          </div>
+
+            <p
+              style={{
+                marginTop: "0.6rem",
+                fontSize: "0.8rem",
+                color: "#a5b4fc",
+              }}
+            >
+              Click card to view full details →
+            </p>
+          </article>
         ))}
       </div>
 
-      {/* Simple pagination controls */}
-      {!loading && !error && totalPages > 1 && (
+      {/* PAGINATION */}
+      {!loading && !error && universities.length > 0 && (
         <div
           style={{
             marginTop: "1.5rem",
             display: "flex",
-            gap: "1rem",
+            justifyContent: "space-between",
             alignItems: "center",
+            fontSize: "0.9rem",
+            color: "#475569",
           }}
         >
-          <button
-            onClick={handlePrevPage}
-            disabled={currentPage === 1}
-            style={{ padding: "0.5rem 1rem" }}
-          >
-            Previous
-          </button>
-          <span>
-            Page {currentPage} of {totalPages}
-          </span>
-          <button
-            onClick={handleNextPage}
-            disabled={currentPage === totalPages}
-            style={{ padding: "0.5rem 1rem" }}
-          >
-            Next
-          </button>
+          <div>
+            Page{" "}
+            <span style={{ fontWeight: 600 }}>
+              {page} / {totalPages}
+            </span>
+          </div>
+
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <button
+              onClick={handlePrev}
+              disabled={page === 1}
+              style={{
+                padding: "0.4rem 0.9rem",
+                borderRadius: "999px",
+                border: "1px solid #cbd5f5",
+                backgroundColor: page === 1 ? "#e5e7eb" : "white",
+                cursor: page === 1 ? "not-allowed" : "pointer",
+              }}
+            >
+              Previous
+            </button>
+
+            <button
+              onClick={handleNext}
+              disabled={page === totalPages}
+              style={{
+                padding: "0.4rem 0.9rem",
+                borderRadius: "999px",
+                border: "1px solid #cbd5f5",
+                backgroundColor: page === totalPages ? "#e5e7eb" : "white",
+                cursor: page === totalPages ? "not-allowed" : "pointer",
+              }}
+            >
+              Next
+            </button>
+          </div>
         </div>
       )}
     </div>
   );
 }
-
-export default ExploreUniversities;
