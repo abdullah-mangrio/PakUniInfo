@@ -3,13 +3,48 @@ import { useNavigate } from "react-router-dom";
 
 const PAGE_SIZE = 10;
 
+// Simple static options for now – later you can fetch from backend.
+const PROVINCES = ["Punjab", "Sindh", "KPK", "Balochistan", "Islamabad"];
+const CITIES = ["Karachi", "Lahore", "Islamabad", "Peshawar", "Quetta"];
+const PROGRAMS = ["BSCS", "BSEE", "BSIT", "BBA", "MBBS"];
+
 export default function ExploreUniversities() {
   const navigate = useNavigate();
+
   const [universities, setUniversities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  // Filters
+  const [searchName, setSearchName] = useState("");
+  const [province, setProvince] = useState("");
+  const [city, setCity] = useState("");
+  const [program, setProgram] = useState("");
+  const [sort, setSort] = useState("ranking-desc");
+
+  // Build query string based on filters
+  const buildQuery = () => {
+    const params = new URLSearchParams();
+
+    params.set("page", page.toString());
+    params.set("limit", PAGE_SIZE.toString());
+
+    if (searchName.trim()) params.set("name", searchName.trim());
+    if (province) params.set("province", province);
+    if (city) params.set("location", city);
+    if (program) params.set("program", program);
+
+    if (sort) {
+      const [sortBy, sortOrder] = sort.split("-");
+      params.set("sortBy", sortBy);
+      params.set("sortOrder", sortOrder);
+    }
+
+    return params.toString();
+  };
 
   useEffect(() => {
     const fetchUniversities = async () => {
@@ -17,8 +52,10 @@ export default function ExploreUniversities() {
         setLoading(true);
         setError("");
 
+        const queryString = buildQuery();
+
         const res = await fetch(
-          `http://localhost:5000/api/universities?page=${page}&limit=${PAGE_SIZE}`
+          `http://localhost:5000/api/universities?${queryString}`
         );
 
         if (!res.ok) {
@@ -38,7 +75,8 @@ export default function ExploreUniversities() {
     };
 
     fetchUniversities();
-  }, [page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, searchName, province, city, program, sort]);
 
   const handlePrev = () => {
     setPage((p) => Math.max(1, p - 1));
@@ -46,6 +84,21 @@ export default function ExploreUniversities() {
 
   const handleNext = () => {
     setPage((p) => Math.min(totalPages, p + 1));
+  };
+
+  const handleClearFilters = () => {
+    setSearchName("");
+    setProvince("");
+    setCity("");
+    setProgram("");
+    setSort("ranking-desc");
+    setPage(1);
+  };
+
+  // Reset to page 1 when filters change (except page itself)
+  const handleFilterChangeWrapper = (setter) => (value) => {
+    setter(value);
+    setPage(1);
   };
 
   return (
@@ -62,10 +115,204 @@ export default function ExploreUniversities() {
           Explore Universities
         </h1>
         <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
-          Browse universities from the PakUniInfo database. Soon you'll be able
-          to filter by province, city, programs, and ranking.
+          Search and filter universities across Pakistan by name, province, city
+          and programs.
         </p>
       </header>
+
+      {/* FILTER BAR */}
+      <section
+        style={{
+          marginBottom: "1.4rem",
+          padding: "1rem 1.25rem",
+          borderRadius: "0.9rem",
+          backgroundColor: "#e5e7eb",
+          border: "1px solid #cbd5f5",
+          boxShadow: "0 6px 16px rgba(148,163,184,0.5)",
+        }}
+      >
+        {/* Search bar */}
+        <div style={{ marginBottom: "0.9rem" }}>
+          <input
+            type="text"
+            placeholder="Search by university name..."
+            value={searchName}
+            onChange={(e) =>
+              handleFilterChangeWrapper(setSearchName)(e.target.value)
+            }
+            style={{
+              width: "100%",
+              padding: "0.65rem 0.85rem",
+              borderRadius: "999px",
+              border: "1px solid #cbd5f5",
+              fontSize: "0.95rem",
+            }}
+          />
+        </div>
+
+        {/* Filter pills */}
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: "0.75rem",
+            alignItems: "center",
+          }}
+        >
+          {/* Province */}
+          <div
+            style={{
+              padding: "0.35rem 0.75rem",
+              borderRadius: "999px",
+              backgroundColor: "white",
+              border: "1px solid #cbd5f5",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+            }}
+          >
+            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>
+              Province
+            </span>
+            <select
+              value={province}
+              onChange={(e) =>
+                handleFilterChangeWrapper(setProvince)(e.target.value)
+              }
+              style={{
+                border: "none",
+                outline: "none",
+                background: "transparent",
+                fontSize: "0.9rem",
+              }}
+            >
+              <option value="">All</option>
+              {PROVINCES.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* City */}
+          <div
+            style={{
+              padding: "0.35rem 0.75rem",
+              borderRadius: "999px",
+              backgroundColor: "white",
+              border: "1px solid #cbd5f5",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+            }}
+          >
+            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>City</span>
+            <select
+              value={city}
+              onChange={(e) =>
+                handleFilterChangeWrapper(setCity)(e.target.value)
+              }
+              style={{
+                border: "none",
+                outline: "none",
+                background: "transparent",
+                fontSize: "0.9rem",
+              }}
+            >
+              <option value="">All</option>
+              {CITIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Program */}
+          <div
+            style={{
+              padding: "0.35rem 0.75rem",
+              borderRadius: "999px",
+              backgroundColor: "white",
+              border: "1px solid #cbd5f5",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+            }}
+          >
+            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>
+              Program
+            </span>
+            <select
+              value={program}
+              onChange={(e) =>
+                handleFilterChangeWrapper(setProgram)(e.target.value)
+              }
+              style={{
+                border: "none",
+                outline: "none",
+                background: "transparent",
+                fontSize: "0.9rem",
+              }}
+            >
+              <option value="">All</option>
+              {PROGRAMS.map((prog) => (
+                <option key={prog} value={prog}>
+                  {prog}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort */}
+          <div
+            style={{
+              padding: "0.35rem 0.75rem",
+              borderRadius: "999px",
+              backgroundColor: "white",
+              border: "1px solid #cbd5f5",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+            }}
+          >
+            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Sort</span>
+            <select
+              value={sort}
+              onChange={(e) =>
+                handleFilterChangeWrapper(setSort)(e.target.value)
+              }
+              style={{
+                border: "none",
+                outline: "none",
+                background: "transparent",
+                fontSize: "0.9rem",
+              }}
+            >
+              <option value="ranking-desc">Ranking: High → Low</option>
+              <option value="ranking-asc">Ranking: Low → High</option>
+              <option value="name-asc">Name: A → Z</option>
+              <option value="name-desc">Name: Z → A</option>
+            </select>
+          </div>
+
+          {/* Clear filters */}
+          <button
+            onClick={handleClearFilters}
+            style={{
+              padding: "0.4rem 0.9rem",
+              borderRadius: "999px",
+              border: "1px solid #cbd5f5",
+              backgroundColor: "white",
+              fontSize: "0.85rem",
+              cursor: "pointer",
+            }}
+          >
+            Clear filters
+          </button>
+        </div>
+      </section>
 
       {/* STATUS SECTION */}
       {loading && (
@@ -80,7 +327,7 @@ export default function ExploreUniversities() {
 
       {!loading && !error && universities.length === 0 && (
         <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
-          No universities found. Try adding some using the backend.
+          No universities found with these filters.
         </p>
       )}
 
@@ -141,24 +388,6 @@ export default function ExploreUniversities() {
                 <span>Not listed</span>
               )}
             </p>
-
-            {uni.website && (
-              <a
-                href={uni.website}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  display: "inline-block",
-                  marginTop: "0.4rem",
-                  fontSize: "0.88rem",
-                  color: "#4ade80",
-                  textDecoration: "underline",
-                }}
-                onClick={(e) => e.stopPropagation()} // so link click doesn't trigger card navigation
-              >
-                Visit Website
-              </a>
-            )}
 
             <p
               style={{
