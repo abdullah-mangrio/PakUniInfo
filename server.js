@@ -2,6 +2,8 @@ import express from "express";
 import { connectDB } from "./config.js";
 import dotenv from "dotenv";
 import universityRoutes from "./routes/universityRoutes.js"; // ✅ Step 1: Import routes
+import cors from "cors";
+
 
 dotenv.config();
 
@@ -9,6 +11,14 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(express.json());
+
+// Allow requests from the React frontend
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  })
+);
+
 
 // ✅ Step 2: Use the university routes
 app.use("/api/universities", universityRoutes);
