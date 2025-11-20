@@ -12,12 +12,9 @@ const port = process.env.PORT || 5000;
 
 app.use(express.json());
 
-// Allow requests from the React frontend
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-  })
-);
+
+app.use(cors()); // allow all origins in development
+
 
 
 // ✅ Step 2: Use the university routes
