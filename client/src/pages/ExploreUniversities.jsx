@@ -5,6 +5,11 @@ import {
   removeFromShortlist,
   isInShortlist,
 } from "../utils/shortlist";
+import {
+  addToCompare,
+  removeFromCompare,
+  isInCompareList,
+} from "../utils/compare";
 
 const PAGE_SIZE = 10;
 
@@ -30,11 +35,9 @@ export default function ExploreUniversities() {
   const [program, setProgram] = useState("");
   const [sort, setSort] = useState("ranking-desc");
 
-  // Just to trigger re-render when shortlist changes
+  // re-render when shortlist / compare changes
   const [shortlistTick, setShortlistTick] = useState(0);
-
-  // Compare selection (max 3)
-  const [compareList, setCompareList] = useState([]);
+  const [compareTick, setCompareTick] = useState(0);
 
   // Build query string based on filters
   const buildQuery = () => {
@@ -113,7 +116,6 @@ export default function ExploreUniversities() {
   };
 
   const handleToggleShortlist = (university, event) => {
-    // prevent card click navigation
     event.stopPropagation();
 
     if (isInShortlist(university._id)) {
@@ -128,40 +130,31 @@ export default function ExploreUniversities() {
         ranking: university.ranking,
         programs: university.programs,
         website: university.website,
-        description: university.description,
       });
     }
 
-    // bump tick to force re-render so button text/color updates
     setShortlistTick((v) => v + 1);
   };
 
   const handleToggleCompare = (university, event) => {
     event.stopPropagation();
-    setCompareList((prev) => {
-      const exists = prev.some((u) => u._id === university._id);
-      if (exists) {
-        return prev.filter((u) => u._id !== university._id);
-      }
-      if (prev.length >= 3) {
+
+    if (isInCompareList(university._id)) {
+      removeFromCompare(university._id);
+    } else {
+      // limit to 3
+      const current = addToCompare(university);
+      if (!isInCompareList(university._id) && current.length >= 3) {
+        // if addToCompare refused due to limit, show alert
         alert("You can compare up to 3 universities at a time.");
-        return prev;
       }
-      return [...prev, university];
-    });
-  };
+    }
 
-  const handleOpenCompare = () => {
-    if (compareList.length < 2) return;
-    navigate("/compare", { state: { universities: compareList } });
-  };
-
-  const handleClearCompare = () => {
-    setCompareList([]);
+    setCompareTick((v) => v + 1);
   };
 
   return (
-    <div style={{ position: "relative", paddingBottom: "3.5rem" }}>
+    <div>
       <header style={{ marginBottom: "1.5rem" }}>
         <h1
           style={{
@@ -175,7 +168,8 @@ export default function ExploreUniversities() {
         </h1>
         <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
           Search and filter universities across Pakistan by name, province, city
-          and programs. Select up to three to compare side by side.
+          and programs. Save options to your shortlist or mark them for
+          comparison.
         </p>
       </header>
 
@@ -370,6 +364,25 @@ export default function ExploreUniversities() {
           >
             Clear filters
           </button>
+
+          {/* Go to Compare page */}
+          <button
+            onClick={() => navigate("/compare")}
+            style={{
+              padding: "0.4rem 0.9rem",
+              borderRadius: "999px",
+              border: "none",
+              background:
+                "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
+              color: "white",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              marginLeft: "auto",
+            }}
+          >
+            Open Compare
+          </button>
         </div>
       </section>
 
@@ -400,8 +413,8 @@ export default function ExploreUniversities() {
         }}
       >
         {universities.map((uni) => {
-          const saved = isInShortlist(uni._id);
-          const inCompare = compareList.some((u) => u._id === uni._id);
+          const savedShortlist = isInShortlist(uni._id);
+          const inCompare = isInCompareList(uni._id);
 
           return (
             <article
@@ -467,13 +480,13 @@ export default function ExploreUniversities() {
                     padding: "0.35rem 0.9rem",
                     borderRadius: "999px",
                     border: "1px solid #cbd5f5",
-                    backgroundColor: saved ? "#22c55e" : "white",
-                    color: saved ? "white" : "#0f172a",
+                    backgroundColor: savedShortlist ? "#22c55e" : "white",
+                    color: savedShortlist ? "white" : "#0f172a",
                     fontSize: "0.82rem",
                     cursor: "pointer",
                   }}
                 >
-                  {saved ? "Remove from shortlist" : "Save to shortlist"}
+                  {savedShortlist ? "Remove from shortlist" : "Save to shortlist"}
                 </button>
 
                 <button
@@ -481,9 +494,9 @@ export default function ExploreUniversities() {
                   style={{
                     padding: "0.35rem 0.9rem",
                     borderRadius: "999px",
-                    border: "1px solid #4f46e5",
-                    backgroundColor: inCompare ? "#4f46e5" : "white",
-                    color: inCompare ? "white" : "#0f172a",
+                    border: "1px solid #bfdbfe",
+                    backgroundColor: inCompare ? "#3b82f6" : "#0b1120",
+                    color: "white",
                     fontSize: "0.82rem",
                     cursor: "pointer",
                   }}
@@ -553,75 +566,6 @@ export default function ExploreUniversities() {
             >
               Next
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* COMPARE BAR */}
-      {compareList.length >= 2 && (
-        <div
-          style={{
-            position: "fixed",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            padding: "0.6rem 1.5rem",
-            background:
-              "linear-gradient(to right, rgba(15,23,42,0.98), rgba(30,64,175,0.95))",
-            color: "white",
-            display: "flex",
-            justifyContent: "center",
-            zIndex: 40,
-          }}
-        >
-          <div
-            style={{
-              maxWidth: "1120px",
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: "1rem",
-            }}
-          >
-            <div style={{ fontSize: "0.9rem" }}>
-              Selected{" "}
-              <strong>{compareList.length}</strong> university
-              {compareList.length > 1 ? "ies" : "y"} for comparison.
-            </div>
-            <div style={{ display: "flex", gap: "0.6rem" }}>
-              <button
-                onClick={handleClearCompare}
-                style={{
-                  padding: "0.4rem 0.9rem",
-                  borderRadius: "999px",
-                  border: "1px solid rgba(148,163,184,0.7)",
-                  backgroundColor: "transparent",
-                  color: "white",
-                  fontSize: "0.85rem",
-                  cursor: "pointer",
-                }}
-              >
-                Clear
-              </button>
-              <button
-                onClick={handleOpenCompare}
-                style={{
-                  padding: "0.4rem 1rem",
-                  borderRadius: "999px",
-                  border: "none",
-                  background:
-                    "linear-gradient(to right, #4f46e5, #6366f1, #a855f7)",
-                  color: "white",
-                  fontSize: "0.88rem",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  boxShadow: "0 10px 24px rgba(79,70,229,0.7)",
-                }}
-              >
-                Compare now →
-              </button>
-            </div>
           </div>
         </div>
       )}

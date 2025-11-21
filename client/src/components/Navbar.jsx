@@ -43,9 +43,7 @@ export default function Navbar() {
           <NavLink
             to="/"
             style={({ isActive }) =>
-              isActive
-                ? { ...baseLinkStyle, ...activeExtra }
-                : baseLinkStyle
+              isActive ? { ...baseLinkStyle, ...activeExtra } : baseLinkStyle
             }
           >
             Home
@@ -54,9 +52,7 @@ export default function Navbar() {
           <NavLink
             to="/universities"
             style={({ isActive }) =>
-              isActive
-                ? { ...baseLinkStyle, ...activeExtra }
-                : baseLinkStyle
+              isActive ? { ...baseLinkStyle, ...activeExtra } : baseLinkStyle
             }
           >
             Explore
@@ -65,20 +61,25 @@ export default function Navbar() {
           <NavLink
             to="/shortlist"
             style={({ isActive }) =>
-              isActive
-                ? { ...baseLinkStyle, ...activeExtra }
-                : baseLinkStyle
+              isActive ? { ...baseLinkStyle, ...activeExtra } : baseLinkStyle
             }
           >
             Shortlist
           </NavLink>
 
           <NavLink
+            to="/compare"
+            style={({ isActive }) =>
+              isActive ? { ...baseLinkStyle, ...activeExtra } : baseLinkStyle
+            }
+          >
+            Compare
+          </NavLink>
+
+          <NavLink
             to="/about"
             style={({ isActive }) =>
-              isActive
-                ? { ...baseLinkStyle, ...activeExtra }
-                : baseLinkStyle
+              isActive ? { ...baseLinkStyle, ...activeExtra } : baseLinkStyle
             }
           >
             About
@@ -87,9 +88,7 @@ export default function Navbar() {
           <NavLink
             to="/admin/universities"
             style={({ isActive }) =>
-              isActive
-                ? { ...baseLinkStyle, ...activeExtra }
-                : baseLinkStyle
+              isActive ? { ...baseLinkStyle, ...activeExtra } : baseLinkStyle
             }
           >
             Admin
