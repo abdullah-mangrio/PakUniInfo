@@ -7,7 +7,7 @@ export default function AdminUniversities() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // form state
+  // create form state
   const [name, setName] = useState("");
   const [city, setCity] = useState("");
   const [province, setProvince] = useState("");
@@ -17,6 +17,20 @@ export default function AdminUniversities() {
   const [programs, setPrograms] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
+
+  // edit modal state
+  const [editId, setEditId] = useState(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    city: "",
+    province: "",
+    location: "",
+    ranking: "",
+    website: "",
+    programs: "",
+    description: "",
+  });
+  const [updating, setUpdating] = useState(false);
 
   const fetchUniversities = async () => {
     try {
@@ -45,7 +59,7 @@ export default function AdminUniversities() {
     fetchUniversities();
   }, []);
 
-  const resetForm = () => {
+  const resetCreateForm = () => {
     setName("");
     setCity("");
     setProvince("");
@@ -59,6 +73,10 @@ export default function AdminUniversities() {
     e.preventDefault();
     if (!name.trim()) {
       alert("Name is required");
+      return;
+    }
+    if (!location.trim()) {
+      alert("Location is required");
       return;
     }
 
@@ -103,7 +121,7 @@ export default function AdminUniversities() {
 
       // Refresh list
       await fetchUniversities();
-      resetForm();
+      resetCreateForm();
     } catch (err) {
       console.error("Error creating university:", err);
       setError(err.message || "Failed to create university.");
@@ -138,6 +156,108 @@ export default function AdminUniversities() {
     }
   };
 
+  // ----- EDIT MODAL LOGIC -----
+
+  const openEditModal = (uni) => {
+    setEditId(uni._id);
+    setEditForm({
+      name: uni.name || "",
+      city: uni.city || "",
+      province: uni.province || "",
+      location: uni.location || "",
+      ranking:
+        typeof uni.ranking === "number" && !Number.isNaN(uni.ranking)
+          ? String(uni.ranking)
+          : "",
+      website: uni.website || "",
+      programs:
+        Array.isArray(uni.programs) && uni.programs.length > 0
+          ? uni.programs.join(", ")
+          : "",
+      description: uni.description || "",
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditId(null);
+    setUpdating(false);
+  };
+
+  const handleEditChange = (field, value) => {
+    setEditForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    if (!editId) return;
+
+    if (!editForm.name.trim()) {
+      alert("Name is required");
+      return;
+    }
+    if (!editForm.location.trim()) {
+      alert("Location is required");
+      return;
+    }
+
+    const payload = {
+      name: editForm.name.trim(),
+      city: editForm.city.trim() || undefined,
+      province: editForm.province.trim() || undefined,
+      location: editForm.location.trim() || undefined,
+      website: editForm.website.trim() || undefined,
+      description: editForm.description.trim() || undefined,
+    };
+
+    if (editForm.ranking.trim()) {
+      const num = Number(editForm.ranking.trim());
+      if (!Number.isNaN(num)) {
+        payload.ranking = num;
+      }
+    }
+
+    if (editForm.programs.trim()) {
+      payload.programs = editForm.programs
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean);
+    }
+
+    try {
+      setUpdating(true);
+      const res = await fetch(
+        `http://localhost:5000/api/universities/${editId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message || `Update failed with status ${res.status}`);
+      }
+
+      const updated = await res.json();
+
+      setUniversities((prev) =>
+        prev.map((u) => (u._id === updated._id ? updated : u))
+      );
+
+      closeEditModal();
+    } catch (err) {
+      console.error("Error updating university:", err);
+      alert(err.message || "Failed to update university.");
+      setUpdating(false);
+    }
+  };
+
   return (
     <div>
       <header style={{ marginBottom: "1.5rem" }}>
@@ -152,8 +272,8 @@ export default function AdminUniversities() {
           Admin – Manage Universities
         </h1>
         <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
-          Create, view and delete universities in the PakUniInfo database.
-          (Admin panel – no authentication yet.)
+          Create, view, edit and delete universities in the PakUniInfo database.
+          (Admin panel – no authentication yet, local use only.)
         </p>
       </header>
 
@@ -187,6 +307,7 @@ export default function AdminUniversities() {
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
           }}
         >
+          {/* Name */}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Name *</label>
             <input
@@ -203,6 +324,7 @@ export default function AdminUniversities() {
             />
           </div>
 
+          {/* City */}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>City</label>
             <input
@@ -218,13 +340,14 @@ export default function AdminUniversities() {
             />
           </div>
 
+          {/* Province */}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Province</label>
             <input
               type="text"
               value={province}
               onChange={(e) => setProvince(e.target.value)}
-              placeholder="e.g. Punjab"
+              placeholder="e.g. Sindh"
               style={{
                 padding: "0.5rem 0.7rem",
                 borderRadius: "0.5rem",
@@ -234,13 +357,16 @@ export default function AdminUniversities() {
             />
           </div>
 
+          {/* Location */}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Location</label>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+              Location *
+            </label>
             <input
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="Optional – area / campus"
+              placeholder="Area / campus"
               style={{
                 padding: "0.5rem 0.7rem",
                 borderRadius: "0.5rem",
@@ -250,6 +376,7 @@ export default function AdminUniversities() {
             />
           </div>
 
+          {/* Ranking */}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
               Ranking (number)
@@ -267,6 +394,7 @@ export default function AdminUniversities() {
             />
           </div>
 
+          {/* Website */}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Website</label>
             <input
@@ -283,6 +411,7 @@ export default function AdminUniversities() {
             />
           </div>
 
+          {/* Programs */}
           <div
             style={{
               gridColumn: "1 / -1",
@@ -308,6 +437,7 @@ export default function AdminUniversities() {
             />
           </div>
 
+          {/* Submit */}
           <div
             style={{
               gridColumn: "1 / -1",
@@ -431,7 +561,21 @@ export default function AdminUniversities() {
               </div>
 
               <div style={{ display: "flex", gap: "0.5rem" }}>
-                {/* Edit will be added in the next phase (PUT). */}
+                <button
+                  onClick={() => openEditModal(uni)}
+                  style={{
+                    padding: "0.35rem 0.85rem",
+                    borderRadius: "999px",
+                    border: "1px solid #cbd5f5",
+                    backgroundColor: "white",
+                    color: "#0f172a",
+                    fontSize: "0.8rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  Edit
+                </button>
+
                 <button
                   onClick={() => handleDelete(uni._id)}
                   style={{
@@ -451,6 +595,294 @@ export default function AdminUniversities() {
           ))}
         </div>
       </section>
+
+      {/* EDIT MODAL */}
+      {editId && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15,23,42,0.55)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 50,
+          }}
+          onClick={closeEditModal}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "min(640px, 95vw)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              borderRadius: "1rem",
+              backgroundColor: "white",
+              padding: "1.25rem 1.5rem",
+              boxShadow: "0 25px 60px rgba(15,23,42,0.8)",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "0.9rem",
+              }}
+            >
+              <h2
+                style={{
+                  margin: 0,
+                  fontSize: "1.1rem",
+                  fontWeight: 600,
+                  color: "#0f172a",
+                }}
+              >
+                Edit university
+              </h2>
+              <button
+                onClick={closeEditModal}
+                style={{
+                  border: "none",
+                  background: "none",
+                  fontSize: "1.2rem",
+                  cursor: "pointer",
+                  color: "#64748b",
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleUpdate}
+              style={{
+                display: "grid",
+                gap: "0.75rem",
+                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+              }}
+            >
+              {/* Name */}
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Name *
+                </label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => handleEditChange("name", e.target.value)}
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                  }}
+                />
+              </div>
+
+              {/* City */}
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  City
+                </label>
+                <input
+                  type="text"
+                  value={editForm.city}
+                  onChange={(e) => handleEditChange("city", e.target.value)}
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                  }}
+                />
+              </div>
+
+              {/* Province */}
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Province
+                </label>
+                <input
+                  type="text"
+                  value={editForm.province}
+                  onChange={(e) => handleEditChange("province", e.target.value)}
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                  }}
+                />
+              </div>
+
+              {/* Location */}
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Location *
+                </label>
+                <input
+                  type="text"
+                  value={editForm.location}
+                  onChange={(e) => handleEditChange("location", e.target.value)}
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                  }}
+                />
+              </div>
+
+              {/* Ranking */}
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Ranking
+                </label>
+                <input
+                  type="number"
+                  value={editForm.ranking}
+                  onChange={(e) => handleEditChange("ranking", e.target.value)}
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                  }}
+                />
+              </div>
+
+              {/* Website */}
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Website
+                </label>
+                <input
+                  type="url"
+                  value={editForm.website}
+                  onChange={(e) => handleEditChange("website", e.target.value)}
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                  }}
+                />
+              </div>
+
+              {/* Programs */}
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.25rem",
+                }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Programs (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={editForm.programs}
+                  onChange={(e) => handleEditChange("programs", e.target.value)}
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                  }}
+                />
+              </div>
+
+              {/* Description */}
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.25rem",
+                }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Description
+                </label>
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) =>
+                    handleEditChange("description", e.target.value)
+                  }
+                  rows={3}
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                    resize: "vertical",
+                  }}
+                />
+              </div>
+
+              {/* Buttons */}
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: "0.5rem",
+                  marginTop: "0.4rem",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  disabled={updating}
+                  style={{
+                    padding: "0.5rem 1.1rem",
+                    borderRadius: "999px",
+                    border: "1px solid #cbd5f5",
+                    backgroundColor: "white",
+                    fontSize: "0.9rem",
+                    cursor: updating ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updating}
+                  style={{
+                    padding: "0.5rem 1.4rem",
+                    borderRadius: "999px",
+                    border: "none",
+                    background:
+                      "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
+                    color: "white",
+                    fontWeight: 600,
+                    fontSize: "0.9rem",
+                    cursor: updating ? "not-allowed" : "pointer",
+                    boxShadow: "0 10px 24px rgba(16, 185, 129, 0.55)",
+                  }}
+                >
+                  {updating ? "Saving..." : "Save changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
