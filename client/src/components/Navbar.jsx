@@ -83,6 +83,17 @@ export default function Navbar() {
           >
             About
           </NavLink>
+
+          <NavLink
+            to="/admin/universities"
+            style={({ isActive }) =>
+              isActive
+                ? { ...baseLinkStyle, ...activeExtra }
+                : baseLinkStyle
+            }
+          >
+            Admin
+          </NavLink>
         </div>
       </nav>
     </header>
