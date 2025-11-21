@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import ExploreUniversities from "./pages/ExploreUniversities";
 import UniversityDetails from "./pages/UniversityDetails";
 import About from "./pages/About";
+import Shortlist from "./pages/Shortlist";
 import Layout from "./Layout";
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/universities" element={<ExploreUniversities />} />
           <Route path="/universities/:id" element={<UniversityDetails />} />
+          <Route path="/shortlist" element={<Shortlist />} />
           <Route path="/about" element={<About />} />
         </Routes>
       </Layout>

@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  addToShortlist,
+  removeFromShortlist,
+  isInShortlist,
+} from "../utils/shortlist";
 
 const PAGE_SIZE = 10;
 
@@ -24,6 +29,9 @@ export default function ExploreUniversities() {
   const [city, setCity] = useState("");
   const [program, setProgram] = useState("");
   const [sort, setSort] = useState("ranking-desc");
+
+  // Just to trigger re-render when shortlist changes
+  const [shortlistTick, setShortlistTick] = useState(0);
 
   // Build query string based on filters
   const buildQuery = () => {
@@ -99,6 +107,29 @@ export default function ExploreUniversities() {
   const handleFilterChangeWrapper = (setter) => (value) => {
     setter(value);
     setPage(1);
+  };
+
+  const handleToggleShortlist = (university, event) => {
+    // prevent card click navigation
+    event.stopPropagation();
+
+    if (isInShortlist(university._id)) {
+      removeFromShortlist(university._id);
+    } else {
+      // Store a light-weight version (you can store full object too)
+      addToShortlist({
+        _id: university._id,
+        name: university.name,
+        location: university.location,
+        city: university.city,
+        province: university.province,
+        ranking: university.ranking,
+        programs: university.programs,
+      });
+    }
+
+    // bump tick to force re-render so button text/color updates
+    setShortlistTick((v) => v + 1);
   };
 
   return (
@@ -340,66 +371,96 @@ export default function ExploreUniversities() {
           marginTop: "1rem",
         }}
       >
-        {universities.map((uni) => (
-          <article
-            key={uni._id}
-            onClick={() => navigate(`/universities/${uni._id}`)}
-            style={{
-              borderRadius: "0.75rem",
-              padding: "1.25rem 1.5rem",
-              backgroundColor: "#020617",
-              color: "white",
-              boxShadow: "0 8px 20px rgba(15,23,42,0.6)",
-              cursor: "pointer",
-              transition: "transform 0.12s ease, box-shadow 0.12s ease",
-            }}
-          >
-            <h2
+        {universities.map((uni) => {
+          // re-evaluate each render so button reflects latest shortlist state
+          const saved = isInShortlist(uni._id);
+
+          return (
+            <article
+              key={uni._id}
+              onClick={() => navigate(`/universities/${uni._id}`)}
               style={{
-                margin: 0,
-                marginBottom: "0.4rem",
-                fontSize: "1.1rem",
-                fontWeight: 700,
+                borderRadius: "0.75rem",
+                padding: "1.25rem 1.5rem",
+                backgroundColor: "#020617",
+                color: "white",
+                boxShadow: "0 8px 20px rgba(15,23,42,0.6)",
+                cursor: "pointer",
+                transition: "transform 0.12s ease, box-shadow 0.12s ease",
               }}
             >
-              {uni.name || "Unnamed University"}
-            </h2>
+              <h2
+                style={{
+                  margin: 0,
+                  marginBottom: "0.4rem",
+                  fontSize: "1.1rem",
+                  fontWeight: 700,
+                }}
+              >
+                {uni.name || "Unnamed University"}
+              </h2>
 
-            <p style={{ margin: 0, fontSize: "0.9rem", color: "#cbd5f5" }}>
-              Location:{" "}
-              <span style={{ color: "#e5e7eb" }}>
-                {uni.location || uni.city || "Not specified"}
-                {uni.province ? `, ${uni.province}` : ""}
-              </span>
-            </p>
+              <p style={{ margin: 0, fontSize: "0.9rem", color: "#cbd5f5" }}>
+                Location:{" "}
+                <span style={{ color: "#e5e7eb" }}>
+                  {uni.location || uni.city || "Not specified"}
+                  {uni.province ? `, ${uni.province}` : ""}
+                </span>
+              </p>
 
-            <p style={{ margin: "0.15rem 0", fontSize: "0.9rem" }}>
-              Ranking:{" "}
-              <span style={{ fontWeight: 600 }}>
-                {uni.ranking != null ? uni.ranking : "N/A"}
-              </span>
-            </p>
+              <p style={{ margin: "0.15rem 0", fontSize: "0.9rem" }}>
+                Ranking:{" "}
+                <span style={{ fontWeight: 600 }}>
+                  {uni.ranking != null ? uni.ranking : "N/A"}
+                </span>
+              </p>
 
-            <p style={{ margin: "0.15rem 0 0.35rem", fontSize: "0.9rem" }}>
-              Programs:{" "}
-              {Array.isArray(uni.programs) && uni.programs.length > 0 ? (
-                <span>{uni.programs.join(", ")}</span>
-              ) : (
-                <span>Not listed</span>
-              )}
-            </p>
+              <p style={{ margin: "0.15rem 0 0.35rem", fontSize: "0.9rem" }}>
+                Programs:{" "}
+                {Array.isArray(uni.programs) && uni.programs.length > 0 ? (
+                  <span>{uni.programs.join(", ")}</span>
+                ) : (
+                  <span>Not listed</span>
+                )}
+              </p>
 
-            <p
-              style={{
-                marginTop: "0.6rem",
-                fontSize: "0.8rem",
-                color: "#a5b4fc",
-              }}
-            >
-              Click card to view full details →
-            </p>
-          </article>
-        ))}
+              <div
+                style={{
+                  marginTop: "0.6rem",
+                  display: "flex",
+                  gap: "0.75rem",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                }}
+              >
+                <button
+                  onClick={(e) => handleToggleShortlist(uni, e)}
+                  style={{
+                    padding: "0.35rem 0.9rem",
+                    borderRadius: "999px",
+                    border: "1px solid #cbd5f5",
+                    backgroundColor: saved ? "#22c55e" : "white",
+                    color: saved ? "white" : "#0f172a",
+                    fontSize: "0.82rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  {saved ? "Remove from shortlist" : "Save to shortlist"}
+                </button>
+
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "0.8rem",
+                    color: "#a5b4fc",
+                  }}
+                >
+                  Click card to view full details →
+                </p>
+              </div>
+            </article>
+          );
+        })}
       </div>
 
       {/* PAGINATION */}
