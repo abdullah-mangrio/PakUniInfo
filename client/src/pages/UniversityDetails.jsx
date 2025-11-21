@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import {
+  addToShortlist,
+  removeFromShortlist,
+  isInShortlist,
+} from "../utils/shortlist";
 
 export default function UniversityDetails() {
   const { id } = useParams();
@@ -9,20 +14,19 @@ export default function UniversityDetails() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // to re-render when shortlist changes
+  const [savedTick, setSavedTick] = useState(0);
+
   useEffect(() => {
     const fetchUniversity = async () => {
       try {
         setLoading(true);
         setError("");
 
-        const res = await fetch(
-          `http://localhost:5000/api/universities/${id}`
-        );
+        const res = await fetch(`http://localhost:5000/api/universities/${id}`);
 
         if (!res.ok) {
-          if (res.status === 404) {
-            throw new Error("University not found.");
-          }
+          if (res.status === 404) throw new Error("University not found.");
           throw new Error(`Request failed with status ${res.status}`);
         }
 
@@ -39,13 +43,21 @@ export default function UniversityDetails() {
     fetchUniversity();
   }, [id]);
 
-  const handleBack = () => {
-    navigate(-1); // back to previous page
+  const handleBack = () => navigate(-1);
+
+  const handleToggleShortlist = () => {
+    if (!university) return;
+
+    if (isInShortlist(university._id)) {
+      removeFromShortlist(university._id);
+    } else {
+      addToShortlist(university);
+    }
+
+    setSavedTick((v) => v + 1);
   };
 
-  if (loading) {
-    return <p>Loading university details...</p>;
-  }
+  if (loading) return <p>Loading university details...</p>;
 
   if (error) {
     return (
@@ -69,27 +81,9 @@ export default function UniversityDetails() {
     );
   }
 
-  if (!university) {
-    return (
-      <div>
-        <button
-          onClick={handleBack}
-          style={{
-            marginBottom: "1rem",
-            padding: "0.35rem 0.9rem",
-            borderRadius: "999px",
-            border: "1px solid #cbd5f5",
-            backgroundColor: "white",
-            cursor: "pointer",
-            fontSize: "0.85rem",
-          }}
-        >
-          ← Back
-        </button>
-        <p>University details not available.</p>
-      </div>
-    );
-  }
+  if (!university) return null;
+
+  const saved = isInShortlist(university._id);
 
   const {
     name,
@@ -116,7 +110,7 @@ export default function UniversityDetails() {
           fontSize: "0.85rem",
         }}
       >
-        ← Back to results
+        ← Back
       </button>
 
       <header style={{ marginBottom: "1rem" }}>
@@ -128,7 +122,7 @@ export default function UniversityDetails() {
             color: "#0f172a",
           }}
         >
-          {name || "University"}
+          {name}
         </h1>
         <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
           {location || city || "Location not specified"}
@@ -136,6 +130,28 @@ export default function UniversityDetails() {
         </p>
       </header>
 
+      {/* SAVE / REMOVE SHORTLIST BUTTON */}
+      <button
+        onClick={handleToggleShortlist}
+        style={{
+          marginBottom: "1.5rem",
+          padding: "0.55rem 1.25rem",
+          borderRadius: "999px",
+          border: "1px solid #cbd5f5",
+          backgroundColor: saved ? "#22c55e" : "white",
+          color: saved ? "white" : "#0f172a",
+          cursor: "pointer",
+          fontSize: "0.9rem",
+          fontWeight: 600,
+          boxShadow: saved
+            ? "0 8px 18px rgba(34,197,94,0.55)"
+            : "0 5px 12px rgba(0,0,0,0.08)",
+        }}
+      >
+        {saved ? "★ Saved to Shortlist" : "☆ Save to Shortlist"}
+      </button>
+
+      {/* DETAILS LAYOUT */}
       <section
         style={{
           display: "grid",
@@ -144,7 +160,7 @@ export default function UniversityDetails() {
           alignItems: "flex-start",
         }}
       >
-        {/* Left: description and programs */}
+        {/* Overview */}
         <div>
           <h2
             style={{
@@ -165,9 +181,10 @@ export default function UniversityDetails() {
             }}
           >
             {description ||
-              "No detailed description is available yet. Please visit the official website or contact the university for more information."}
+              "No detailed description is available yet. Visit the official university website for more."}
           </p>
 
+          {/* Programs */}
           <h3
             style={{
               fontSize: "0.98rem",
@@ -178,24 +195,23 @@ export default function UniversityDetails() {
           >
             Programs
           </h3>
+
           {Array.isArray(programs) && programs.length > 0 ? (
             <div
               style={{
                 display: "flex",
                 flexWrap: "wrap",
-                gap: "0.4rem",
-                marginBottom: "1rem",
+                gap: "0.45rem",
               }}
             >
               {programs.map((p) => (
                 <span
                   key={p}
                   style={{
-                    fontSize: "0.8rem",
-                    padding: "0.25rem 0.6rem",
+                    padding: "0.3rem 0.7rem",
                     borderRadius: "999px",
+                    fontSize: "0.83rem",
                     backgroundColor: "#e0f2fe",
-                    color: "#0f172a",
                     border: "1px solid #bae6fd",
                   }}
                 >
@@ -204,13 +220,11 @@ export default function UniversityDetails() {
               ))}
             </div>
           ) : (
-            <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
-              Programs not listed yet.
-            </p>
+            <p style={{ color: "#64748b", fontSize: "0.9rem" }}>Not listed.</p>
           )}
         </div>
 
-        {/* Right: quick info card */}
+        {/* Quick Info */}
         <aside
           style={{
             borderRadius: "0.9rem",
@@ -230,68 +244,29 @@ export default function UniversityDetails() {
             Quick Info
           </h2>
 
-          <dl
-            style={{
-              margin: 0,
-              display: "grid",
-              rowGap: "0.5rem",
-              fontSize: "0.9rem",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <dt style={{ color: "#cbd5f5" }}>Location</dt>
-              <dd style={{ margin: 0 }}>
-                {location || city || "Not specified"}
-                {province ? `, ${province}` : ""}
-              </dd>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <dt style={{ color: "#cbd5f5" }}>Ranking</dt>
-              <dd style={{ margin: 0 }}>
-                {ranking != null ? `#${ranking}` : "N/A"}
-              </dd>
-            </div>
-
-            {website && (
-              <div style={{ marginTop: "0.4rem" }}>
-                <dt
-                  style={{
-                    color: "#cbd5f5",
-                    marginBottom: "0.15rem",
-                  }}
-                >
-                  Official Website
-                </dt>
-                <dd style={{ margin: 0 }}>
-                  <a
-                    href={website}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{
-                      color: "#4ade80",
-                      fontSize: "0.88rem",
-                      textDecoration: "underline",
-                    }}
-                  >
-                    Visit Website
-                  </a>
-                </dd>
-              </div>
-            )}
-          </dl>
-
-          <p
-            style={{
-              marginTop: "1rem",
-              fontSize: "0.78rem",
-              color: "#e5e7eb",
-              lineHeight: 1.4,
-            }}
-          >
-            Always confirm admission details, fee structure, and updated
-            programs from the official university website or admissions office.
+          <p>
+            <strong>Ranking:</strong>{" "}
+            {ranking != null ? `#${ranking}` : "N/A"}
           </p>
+
+          <p>
+            <strong>Location:</strong> {location || city || "Not specified"}
+            {province ? `, ${province}` : ""}
+          </p>
+
+          {website && (
+            <p>
+              <strong>Website:</strong>{" "}
+              <a
+                href={website}
+                target="_blank"
+                rel="noreferrer"
+                style={{ color: "#4ade80", textDecoration: "underline" }}
+              >
+                Visit Website
+              </a>
+            </p>
+          )}
         </aside>
       </section>
     </div>
