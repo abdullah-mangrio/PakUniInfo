@@ -59,6 +59,15 @@ export default function Navbar() {
           </NavLink>
 
           <NavLink
+            to="/guidance"
+            style={({ isActive }) =>
+              isActive ? { ...baseLinkStyle, ...activeExtra } : baseLinkStyle
+            }
+          >
+            Guidance
+          </NavLink>
+
+          <NavLink
             to="/shortlist"
             style={({ isActive }) =>
               isActive ? { ...baseLinkStyle, ...activeExtra } : baseLinkStyle

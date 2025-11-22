@@ -6,6 +6,7 @@ import About from "./pages/About";
 import Shortlist from "./pages/Shortlist";
 import AdminUniversities from "./pages/AdminUniversities";
 import Compare from "./pages/Compare";
+import Guidance from "./pages/Guidance";
 import Layout from "./Layout";
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
           <Route path="/universities/:id" element={<UniversityDetails />} />
           <Route path="/shortlist" element={<Shortlist />} />
           <Route path="/compare" element={<Compare />} />
+          <Route path="/guidance" element={<Guidance />} />
           <Route path="/admin/universities" element={<AdminUniversities />} />
           <Route path="/about" element={<About />} />
         </Routes>
