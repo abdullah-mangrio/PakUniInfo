@@ -1,6 +1,82 @@
+// client/src/pages/AdminUniversities.jsx
 import { useEffect, useState } from "react";
 
 const PAGE_LIMIT = 100; // show up to 100 in admin list
+
+// Helper: parse "one cycle per line" text into objects
+function parseAdmissionCycles(raw) {
+  if (!raw || !raw.trim()) return undefined;
+
+  const lines = raw
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const cycles = [];
+
+  for (const line of lines) {
+    const parts = line.split("|").map((p) => p.trim());
+    if (!parts[0]) continue;
+
+    const [name, openDateStr, deadlineStr, notes] = parts;
+
+    const cycle = { name };
+
+    if (openDateStr) {
+      const d = new Date(openDateStr);
+      if (!Number.isNaN(d.getTime())) {
+        cycle.applicationOpenDate = d.toISOString();
+      }
+    }
+
+    if (deadlineStr) {
+      const d = new Date(deadlineStr);
+      if (!Number.isNaN(d.getTime())) {
+        cycle.applicationDeadline = d.toISOString();
+      }
+    }
+
+    if (notes) {
+      cycle.notes = notes;
+    }
+
+    cycles.push(cycle);
+  }
+
+  return cycles.length > 0 ? cycles : undefined;
+}
+
+// Helper: format admissionCycles from DB into textarea lines
+function formatAdmissionCycles(cycles) {
+  if (!Array.isArray(cycles) || cycles.length === 0) return "";
+  return cycles
+    .map((c) => {
+      const name = c.name || "";
+      const open =
+        c.applicationOpenDate instanceof Date
+          ? c.applicationOpenDate
+          : c.applicationOpenDate
+          ? new Date(c.applicationOpenDate)
+          : null;
+      const deadline =
+        c.applicationDeadline instanceof Date
+          ? c.applicationDeadline
+          : c.applicationDeadline
+          ? new Date(c.applicationDeadline)
+          : null;
+
+      const openStr = open && !Number.isNaN(open.getTime())
+        ? open.toISOString().slice(0, 10)
+        : "";
+      const deadlineStr = deadline && !Number.isNaN(deadline.getTime())
+        ? deadline.toISOString().slice(0, 10)
+        : "";
+      const notes = c.notes || "";
+
+      return [name, openStr, deadlineStr, notes].join(" | ").trim();
+    })
+    .join("\n");
+}
 
 export default function AdminUniversities() {
   const [universities, setUniversities] = useState([]);
@@ -15,6 +91,19 @@ export default function AdminUniversities() {
   const [ranking, setRanking] = useState("");
   const [website, setWebsite] = useState("");
   const [programs, setPrograms] = useState("");
+  const [description, setDescription] = useState("");
+
+  const [tuitionFeeMin, setTuitionFeeMin] = useState("");
+  const [tuitionFeeMax, setTuitionFeeMax] = useState("");
+  const [tuitionFeeCurrency, setTuitionFeeCurrency] = useState("PKR");
+  const [tuitionFeeNote, setTuitionFeeNote] = useState("");
+
+  const [admissionNotes, setAdmissionNotes] = useState("");
+  const [admissionCyclesRaw, setAdmissionCyclesRaw] = useState("");
+
+  const [logoUrl, setLogoUrl] = useState("");
+  const [heroImageUrl, setHeroImageUrl] = useState("");
+  const [galleryImages, setGalleryImages] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -29,6 +118,15 @@ export default function AdminUniversities() {
     website: "",
     programs: "",
     description: "",
+    tuitionFeeMin: "",
+    tuitionFeeMax: "",
+    tuitionFeeCurrency: "PKR",
+    tuitionFeeNote: "",
+    admissionNotes: "",
+    admissionCyclesRaw: "",
+    logoUrl: "",
+    heroImageUrl: "",
+    galleryImages: "",
   });
   const [updating, setUpdating] = useState(false);
 
@@ -67,6 +165,16 @@ export default function AdminUniversities() {
     setRanking("");
     setWebsite("");
     setPrograms("");
+    setDescription("");
+    setTuitionFeeMin("");
+    setTuitionFeeMax("");
+    setTuitionFeeCurrency("PKR");
+    setTuitionFeeNote("");
+    setAdmissionNotes("");
+    setAdmissionCyclesRaw("");
+    setLogoUrl("");
+    setHeroImageUrl("");
+    setGalleryImages("");
   };
 
   const handleCreate = async (e) => {
@@ -86,8 +194,10 @@ export default function AdminUniversities() {
       province: province.trim() || undefined,
       location: location.trim() || undefined,
       website: website.trim() || undefined,
+      description: description.trim() || undefined,
     };
 
+    // ranking
     if (ranking.trim()) {
       const num = Number(ranking.trim());
       if (!Number.isNaN(num)) {
@@ -95,10 +205,46 @@ export default function AdminUniversities() {
       }
     }
 
+    // programs
     if (programs.trim()) {
       payload.programs = programs
         .split(",")
         .map((p) => p.trim())
+        .filter(Boolean);
+    }
+
+    // fees
+    if (tuitionFeeMin.trim()) {
+      const num = Number(tuitionFeeMin.trim());
+      if (!Number.isNaN(num)) payload.tuitionFeeMin = num;
+    }
+    if (tuitionFeeMax.trim()) {
+      const num = Number(tuitionFeeMax.trim());
+      if (!Number.isNaN(num)) payload.tuitionFeeMax = num;
+    }
+    if (tuitionFeeCurrency.trim()) {
+      payload.tuitionFeeCurrency = tuitionFeeCurrency.trim();
+    }
+    if (tuitionFeeNote.trim()) {
+      payload.tuitionFeeNote = tuitionFeeNote.trim();
+    }
+
+    // admission
+    if (admissionNotes.trim()) {
+      payload.admissionNotes = admissionNotes.trim();
+    }
+    const cycles = parseAdmissionCycles(admissionCyclesRaw);
+    if (cycles) {
+      payload.admissionCycles = cycles;
+    }
+
+    // images
+    if (logoUrl.trim()) payload.logoUrl = logoUrl.trim();
+    if (heroImageUrl.trim()) payload.heroImageUrl = heroImageUrl.trim();
+    if (galleryImages.trim()) {
+      payload.galleryImages = galleryImages
+        .split(",")
+        .map((u) => u.trim())
         .filter(Boolean);
     }
 
@@ -116,10 +262,11 @@ export default function AdminUniversities() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || `Request failed with status ${res.status}`);
+        throw new Error(
+          data.message || `Request failed with status ${res.status}`
+        );
       }
 
-      // Refresh list
       await fetchUniversities();
       resetCreateForm();
     } catch (err) {
@@ -146,7 +293,9 @@ export default function AdminUniversities() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || `Delete failed with status ${res.status}`);
+        throw new Error(
+          data.message || `Delete failed with status ${res.status}`
+        );
       }
 
       setUniversities((prev) => prev.filter((u) => u._id !== id));
@@ -175,6 +324,20 @@ export default function AdminUniversities() {
           ? uni.programs.join(", ")
           : "",
       description: uni.description || "",
+      tuitionFeeMin:
+        typeof uni.tuitionFeeMin === "number" ? String(uni.tuitionFeeMin) : "",
+      tuitionFeeMax:
+        typeof uni.tuitionFeeMax === "number" ? String(uni.tuitionFeeMax) : "",
+      tuitionFeeCurrency: uni.tuitionFeeCurrency || "PKR",
+      tuitionFeeNote: uni.tuitionFeeNote || "",
+      admissionNotes: uni.admissionNotes || "",
+      admissionCyclesRaw: formatAdmissionCycles(uni.admissionCycles),
+      logoUrl: uni.logoUrl || "",
+      heroImageUrl: uni.heroImageUrl || "",
+      galleryImages:
+        Array.isArray(uni.galleryImages) && uni.galleryImages.length > 0
+          ? uni.galleryImages.join(", ")
+          : "",
     });
   };
 
@@ -212,6 +375,7 @@ export default function AdminUniversities() {
       description: editForm.description.trim() || undefined,
     };
 
+    // ranking
     if (editForm.ranking.trim()) {
       const num = Number(editForm.ranking.trim());
       if (!Number.isNaN(num)) {
@@ -219,11 +383,75 @@ export default function AdminUniversities() {
       }
     }
 
+    // programs
     if (editForm.programs.trim()) {
       payload.programs = editForm.programs
         .split(",")
         .map((p) => p.trim())
         .filter(Boolean);
+    }
+
+    // fees
+    if (editForm.tuitionFeeMin.trim()) {
+      const num = Number(editForm.tuitionFeeMin.trim());
+      if (!Number.isNaN(num)) payload.tuitionFeeMin = num;
+    } else {
+      payload.tuitionFeeMin = undefined;
+    }
+
+    if (editForm.tuitionFeeMax.trim()) {
+      const num = Number(editForm.tuitionFeeMax.trim());
+      if (!Number.isNaN(num)) payload.tuitionFeeMax = num;
+    } else {
+      payload.tuitionFeeMax = undefined;
+    }
+
+    if (editForm.tuitionFeeCurrency.trim()) {
+      payload.tuitionFeeCurrency = editForm.tuitionFeeCurrency.trim();
+    } else {
+      payload.tuitionFeeCurrency = undefined;
+    }
+
+    if (editForm.tuitionFeeNote.trim()) {
+      payload.tuitionFeeNote = editForm.tuitionFeeNote.trim();
+    } else {
+      payload.tuitionFeeNote = undefined;
+    }
+
+    // admission
+    if (editForm.admissionNotes.trim()) {
+      payload.admissionNotes = editForm.admissionNotes.trim();
+    } else {
+      payload.admissionNotes = undefined;
+    }
+
+    const cycles = parseAdmissionCycles(editForm.admissionCyclesRaw);
+    if (cycles) {
+      payload.admissionCycles = cycles;
+    } else {
+      payload.admissionCycles = [];
+    }
+
+    // images
+    if (editForm.logoUrl.trim()) {
+      payload.logoUrl = editForm.logoUrl.trim();
+    } else {
+      payload.logoUrl = undefined;
+    }
+
+    if (editForm.heroImageUrl.trim()) {
+      payload.heroImageUrl = editForm.heroImageUrl.trim();
+    } else {
+      payload.heroImageUrl = undefined;
+    }
+
+    if (editForm.galleryImages.trim()) {
+      payload.galleryImages = editForm.galleryImages
+        .split(",")
+        .map((u) => u.trim())
+        .filter(Boolean);
+    } else {
+      payload.galleryImages = [];
     }
 
     try {
@@ -241,7 +469,9 @@ export default function AdminUniversities() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || `Update failed with status ${res.status}`);
+        throw new Error(
+          data.message || `Update failed with status ${res.status}`
+        );
       }
 
       const updated = await res.json();
@@ -273,7 +503,7 @@ export default function AdminUniversities() {
         </h1>
         <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
           Create, view, edit and delete universities in the PakUniInfo database.
-          (Admin panel – no authentication yet, local use only.)
+          This panel now supports fees, admission info and images.
         </p>
       </header>
 
@@ -437,6 +667,227 @@ export default function AdminUniversities() {
             />
           </div>
 
+          {/* Description */}
+          <div
+            style={{
+              gridColumn: "1 / -1",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.25rem",
+            }}
+          >
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+              Description / overview
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              style={{
+                padding: "0.5rem 0.7rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #cbd5f5",
+                fontSize: "0.9rem",
+                resize: "vertical",
+              }}
+            />
+          </div>
+
+          {/* FEES */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+              Fee (min, per year)
+            </label>
+            <input
+              type="number"
+              value={tuitionFeeMin}
+              onChange={(e) => setTuitionFeeMin(e.target.value)}
+              placeholder="e.g. 150000"
+              style={{
+                padding: "0.5rem 0.7rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #cbd5f5",
+                fontSize: "0.9rem",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+              Fee (max, per year)
+            </label>
+            <input
+              type="number"
+              value={tuitionFeeMax}
+              onChange={(e) => setTuitionFeeMax(e.target.value)}
+              placeholder="e.g. 350000"
+              style={{
+                padding: "0.5rem 0.7rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #cbd5f5",
+                fontSize: "0.9rem",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+              Fee currency
+            </label>
+            <input
+              type="text"
+              value={tuitionFeeCurrency}
+              onChange={(e) => setTuitionFeeCurrency(e.target.value)}
+              placeholder="PKR"
+              style={{
+                padding: "0.5rem 0.7rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #cbd5f5",
+                fontSize: "0.9rem",
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              gridColumn: "1 / -1",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.25rem",
+            }}
+          >
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+              Fee note (optional)
+            </label>
+            <textarea
+              value={tuitionFeeNote}
+              onChange={(e) => setTuitionFeeNote(e.target.value)}
+              rows={2}
+              placeholder="e.g. Varies by program, excludes hostel..."
+              style={{
+                padding: "0.5rem 0.7rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #cbd5f5",
+                fontSize: "0.9rem",
+                resize: "vertical",
+              }}
+            />
+          </div>
+
+          {/* ADMISSION NOTES & CYCLES */}
+          <div
+            style={{
+              gridColumn: "1 / -1",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.25rem",
+            }}
+          >
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+              General admission notes
+            </label>
+            <textarea
+              value={admissionNotes}
+              onChange={(e) => setAdmissionNotes(e.target.value)}
+              rows={2}
+              placeholder="e.g. NTS required, apply via HEC portal..."
+              style={{
+                padding: "0.5rem 0.7rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #cbd5f5",
+                fontSize: "0.9rem",
+                resize: "vertical",
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              gridColumn: "1 / -1",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.25rem",
+            }}
+          >
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+              Admission cycles (one per line)
+            </label>
+            <textarea
+              value={admissionCyclesRaw}
+              onChange={(e) => setAdmissionCyclesRaw(e.target.value)}
+              rows={4}
+              placeholder={`Example:\nFall 2025 | 2025-01-15 | 2025-04-30 | NTS required\nSpring 2026 | 2025-09-01 | 2025-11-30 | Online applications only`}
+              style={{
+                padding: "0.5rem 0.7rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #cbd5f5",
+                fontSize: "0.9rem",
+                resize: "vertical",
+                whiteSpace: "pre-wrap",
+              }}
+            />
+          </div>
+
+          {/* IMAGES */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+              Logo URL
+            </label>
+            <input
+              type="url"
+              value={logoUrl}
+              onChange={(e) => setLogoUrl(e.target.value)}
+              placeholder="https://... small logo"
+              style={{
+                padding: "0.5rem 0.7rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #cbd5f5",
+                fontSize: "0.9rem",
+              }}
+            />
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+              Hero / banner image URL
+            </label>
+            <input
+              type="url"
+              value={heroImageUrl}
+              onChange={(e) => setHeroImageUrl(e.target.value)}
+              placeholder="https://... large cover image"
+              style={{
+                padding: "0.5rem 0.7rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #cbd5f5",
+                fontSize: "0.9rem",
+              }}
+            />
+          </div>
+
+          <div
+            style={{
+              gridColumn: "1 / -1",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.25rem",
+            }}
+          >
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+              Gallery image URLs (comma-separated)
+            </label>
+            <input
+              type="text"
+              value={galleryImages}
+              onChange={(e) => setGalleryImages(e.target.value)}
+              placeholder="https://image1.jpg, https://image2.jpg"
+              style={{
+                padding: "0.5rem 0.7rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #cbd5f5",
+                fontSize: "0.9rem",
+              }}
+            />
+          </div>
+
           {/* Submit */}
           <div
             style={{
@@ -505,94 +956,119 @@ export default function AdminUniversities() {
             gap: "0.6rem",
           }}
         >
-          {universities.map((uni) => (
-            <article
-              key={uni._id}
-              style={{
-                borderRadius: "0.6rem",
-                padding: "0.85rem 1rem",
-                backgroundColor: "#020617",
-                color: "white",
-                boxShadow: "0 6px 14px rgba(15,23,42,0.7)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "0.75rem",
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <h3
-                  style={{
-                    margin: 0,
-                    marginBottom: "0.2rem",
-                    fontSize: "1rem",
-                    fontWeight: 600,
-                  }}
-                >
-                  {uni.name}
-                </h3>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "0.85rem",
-                    color: "#cbd5f5",
-                  }}
-                >
-                  {uni.city || uni.location || "Location not set"}
-                  {uni.province ? `, ${uni.province}` : ""}
-                </p>
-                <p
-                  style={{
-                    margin: "0.15rem 0 0",
-                    fontSize: "0.8rem",
-                    color: "#e5e7eb",
-                  }}
-                >
-                  Ranking:{" "}
-                  <span style={{ fontWeight: 600 }}>
-                    {uni.ranking != null ? uni.ranking : "N/A"}
-                  </span>{" "}
-                  · Programs:{" "}
-                  {Array.isArray(uni.programs) && uni.programs.length > 0
-                    ? uni.programs.join(", ")
-                    : "Not set"}
-                </p>
-              </div>
+          {universities.map((uni) => {
+            const hasFee =
+              typeof uni.tuitionFeeMin === "number" ||
+              typeof uni.tuitionFeeMax === "number";
 
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button
-                  onClick={() => openEditModal(uni)}
-                  style={{
-                    padding: "0.35rem 0.85rem",
-                    borderRadius: "999px",
-                    border: "1px solid #cbd5f5",
-                    backgroundColor: "white",
-                    color: "#0f172a",
-                    fontSize: "0.8rem",
-                    cursor: "pointer",
-                  }}
-                >
-                  Edit
-                </button>
+            return (
+              <article
+                key={uni._id}
+                style={{
+                  borderRadius: "0.6rem",
+                  padding: "0.85rem 1rem",
+                  backgroundColor: "#020617",
+                  color: "white",
+                  boxShadow: "0 6px 14px rgba(15,23,42,0.7)",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                  flexWrap: "wrap",
+                }}
+              >
+                <div>
+                  <h3
+                    style={{
+                      margin: 0,
+                      marginBottom: "0.2rem",
+                      fontSize: "1rem",
+                      fontWeight: 600,
+                    }}
+                  >
+                    {uni.name}
+                  </h3>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "0.85rem",
+                      color: "#cbd5f5",
+                    }}
+                  >
+                    {uni.city || uni.location || "Location not set"}
+                    {uni.province ? `, ${uni.province}` : ""}
+                  </p>
+                  <p
+                    style={{
+                      margin: "0.15rem 0 0",
+                      fontSize: "0.8rem",
+                      color: "#e5e7eb",
+                    }}
+                  >
+                    Ranking:{" "}
+                    <span style={{ fontWeight: 600 }}>
+                      {uni.ranking != null ? uni.ranking : "N/A"}
+                    </span>{" "}
+                    · Programs:{" "}
+                    {Array.isArray(uni.programs) && uni.programs.length > 0
+                      ? uni.programs.join(", ")
+                      : "Not set"}
+                  </p>
+                  {hasFee && (
+                    <p
+                      style={{
+                        margin: "0.1rem 0 0",
+                        fontSize: "0.8rem",
+                        color: "#facc15",
+                      }}
+                    >
+                      Fee approx:{" "}
+                      {uni.tuitionFeeCurrency || "PKR"}{" "}
+                      {uni.tuitionFeeMin
+                        ? uni.tuitionFeeMin.toLocaleString("en-PK")
+                        : "?"}
+                      {uni.tuitionFeeMax
+                        ? ` – ${uni.tuitionFeeMax.toLocaleString("en-PK")}`
+                        : ""}{" "}
+                      / year
+                    </p>
+                  )}
+                </div>
 
-                <button
-                  onClick={() => handleDelete(uni._id)}
-                  style={{
-                    padding: "0.35rem 0.85rem",
-                    borderRadius: "999px",
-                    border: "1px solid #fecaca",
-                    backgroundColor: "#fee2e2",
-                    color: "#b91c1c",
-                    fontSize: "0.8rem",
-                    cursor: "pointer",
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            </article>
-          ))}
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button
+                    onClick={() => openEditModal(uni)}
+                    style={{
+                      padding: "0.35rem 0.85rem",
+                      borderRadius: "999px",
+                      border: "1px solid #cbd5f5",
+                      backgroundColor: "white",
+                      color: "#0f172a",
+                      fontSize: "0.8rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={() => handleDelete(uni._id)}
+                    style={{
+                      padding: "0.35rem 0.85rem",
+                      borderRadius: "999px",
+                      border: "1px solid #fecaca",
+                      backgroundColor: "#fee2e2",
+                      color: "#b91c1c",
+                      fontSize: "0.8rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
 
@@ -613,7 +1089,7 @@ export default function AdminUniversities() {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: "min(640px, 95vw)",
+              width: "min(700px, 95vw)",
               maxHeight: "90vh",
               overflowY: "auto",
               borderRadius: "1rem",
@@ -662,7 +1138,7 @@ export default function AdminUniversities() {
                 gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
               }}
             >
-              {/* Name */}
+              {/* name, city, province, location, ranking, website, etc. */}
               <div
                 style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
               >
@@ -682,13 +1158,10 @@ export default function AdminUniversities() {
                 />
               </div>
 
-              {/* City */}
               <div
                 style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
               >
-                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                  City
-                </label>
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>City</label>
                 <input
                   type="text"
                   value={editForm.city}
@@ -702,7 +1175,6 @@ export default function AdminUniversities() {
                 />
               </div>
 
-              {/* Province */}
               <div
                 style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
               >
@@ -722,7 +1194,6 @@ export default function AdminUniversities() {
                 />
               </div>
 
-              {/* Location */}
               <div
                 style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
               >
@@ -742,7 +1213,6 @@ export default function AdminUniversities() {
                 />
               </div>
 
-              {/* Ranking */}
               <div
                 style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
               >
@@ -762,7 +1232,6 @@ export default function AdminUniversities() {
                 />
               </div>
 
-              {/* Website */}
               <div
                 style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
               >
@@ -797,7 +1266,9 @@ export default function AdminUniversities() {
                 <input
                   type="text"
                   value={editForm.programs}
-                  onChange={(e) => handleEditChange("programs", e.target.value)}
+                  onChange={(e) =>
+                    handleEditChange("programs", e.target.value)
+                  }
                   style={{
                     padding: "0.5rem 0.7rem",
                     borderRadius: "0.5rem",
@@ -831,6 +1302,220 @@ export default function AdminUniversities() {
                     border: "1px solid #cbd5f5",
                     fontSize: "0.9rem",
                     resize: "vertical",
+                  }}
+                />
+              </div>
+
+              {/* Fees */}
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Fee (min)
+                </label>
+                <input
+                  type="number"
+                  value={editForm.tuitionFeeMin}
+                  onChange={(e) =>
+                    handleEditChange("tuitionFeeMin", e.target.value)
+                  }
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                  }}
+                />
+              </div>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Fee (max)
+                </label>
+                <input
+                  type="number"
+                  value={editForm.tuitionFeeMax}
+                  onChange={(e) =>
+                    handleEditChange("tuitionFeeMax", e.target.value)
+                  }
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                  }}
+                />
+              </div>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Fee currency
+                </label>
+                <input
+                  type="text"
+                  value={editForm.tuitionFeeCurrency}
+                  onChange={(e) =>
+                    handleEditChange("tuitionFeeCurrency", e.target.value)
+                  }
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.25rem",
+                }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Fee note
+                </label>
+                <textarea
+                  value={editForm.tuitionFeeNote}
+                  onChange={(e) =>
+                    handleEditChange("tuitionFeeNote", e.target.value)
+                  }
+                  rows={2}
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                    resize: "vertical",
+                  }}
+                />
+              </div>
+
+              {/* Admission notes & cycles */}
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.25rem",
+                }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  General admission notes
+                </label>
+                <textarea
+                  value={editForm.admissionNotes}
+                  onChange={(e) =>
+                    handleEditChange("admissionNotes", e.target.value)
+                  }
+                  rows={2}
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                    resize: "vertical",
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.25rem",
+                }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Admission cycles (one per line)
+                </label>
+                <textarea
+                  value={editForm.admissionCyclesRaw}
+                  onChange={(e) =>
+                    handleEditChange("admissionCyclesRaw", e.target.value)
+                  }
+                  rows={4}
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                    resize: "vertical",
+                    whiteSpace: "pre-wrap",
+                  }}
+                />
+              </div>
+
+              {/* Images */}
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Logo URL
+                </label>
+                <input
+                  type="url"
+                  value={editForm.logoUrl}
+                  onChange={(e) =>
+                    handleEditChange("logoUrl", e.target.value)
+                  }
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                  }}
+                />
+              </div>
+
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Hero image URL
+                </label>
+                <input
+                  type="url"
+                  value={editForm.heroImageUrl}
+                  onChange={(e) =>
+                    handleEditChange("heroImageUrl", e.target.value)
+                  }
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
+                  }}
+                />
+              </div>
+
+              <div
+                style={{
+                  gridColumn: "1 / -1",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.25rem",
+                }}
+              >
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                  Gallery image URLs (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={editForm.galleryImages}
+                  onChange={(e) =>
+                    handleEditChange("galleryImages", e.target.value)
+                  }
+                  style={{
+                    padding: "0.5rem 0.7rem",
+                    borderRadius: "0.5rem",
+                    border: "1px solid #cbd5f5",
+                    fontSize: "0.9rem",
                   }}
                 />
               </div>

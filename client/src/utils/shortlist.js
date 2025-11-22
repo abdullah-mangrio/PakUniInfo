@@ -1,5 +1,3 @@
-// client/src/utils/shortlist.js
-
 const STORAGE_KEY = "pakuniinfo_shortlist";
 
 function readShortlist() {
@@ -49,4 +47,8 @@ export function removeFromShortlist(id) {
   const updated = list.filter((u) => u._id !== id);
   writeShortlist(updated);
   return updated;
+}
+
+export function clearShortlist() {
+  writeShortlist([]);
 }

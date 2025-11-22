@@ -3,64 +3,202 @@ import { useNavigate } from "react-router-dom";
 import {
   getShortlist,
   removeFromShortlist,
+  clearShortlist,
 } from "../utils/shortlist";
+import {
+  addToCompare,
+  removeFromCompare,
+  isInCompareList,
+  getCompareList,
+} from "../utils/compare";
 
 export default function Shortlist() {
   const navigate = useNavigate();
-  const [universities, setUniversities] = useState([]);
+  const [shortlist, setShortlist] = useState([]);
+  const [tick, setTick] = useState(0); // to trigger re-render on changes
 
   useEffect(() => {
-    setUniversities(getShortlist());
-  }, []);
+    setShortlist(getShortlist());
+  }, [tick]);
 
-  const handleRemove = (id) => {
-    const updated = removeFromShortlist(id);
-    setUniversities(updated);
+  const refreshShortlist = () => {
+    setShortlist(getShortlist());
+    setTick((t) => t + 1);
   };
 
-  const handleViewDetails = (id) => {
-    navigate(`/universities/${id}`);
+  const handleRemove = (id, e) => {
+    e.stopPropagation();
+    removeFromShortlist(id);
+    refreshShortlist();
+  };
+
+  const handleClearAll = () => {
+    if (shortlist.length === 0) return;
+    if (!window.confirm("Remove all universities from your shortlist?")) return;
+    clearShortlist();
+    refreshShortlist();
+  };
+
+  const handleToggleCompare = (uni, e) => {
+    e.stopPropagation();
+
+    if (isInCompareList(uni._id)) {
+      removeFromCompare(uni._id);
+      setTick((t) => t + 1);
+      return;
+    }
+
+    const current = getCompareList();
+    if (current.length >= 3) {
+      alert("You can compare up to 3 universities at a time.");
+      return;
+    }
+
+    addToCompare(uni);
+    setTick((t) => t + 1);
+  };
+
+  const outerCardStyle = {
+    borderRadius: "1.25rem",
+    background:
+      "radial-gradient(circle at top left, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%)",
+    padding: "2.4rem 2.6rem",
+    boxShadow: "0 26px 70px rgba(15,23,42,0.7)",
+    marginTop: "1.5rem",
   };
 
   return (
     <div>
-      <header style={{ marginBottom: "1.5rem" }}>
-        <h1
+      <div style={outerCardStyle}>
+        {/* HEADER */}
+        <header
           style={{
-            fontSize: "1.6rem",
-            fontWeight: 700,
-            marginBottom: "0.35rem",
-            color: "#0f172a",
+            marginBottom: "1.4rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.4rem",
           }}
         >
-          Saved Universities
-        </h1>
-        <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
-          These are universities you&apos;ve added to your shortlist on this
-          device.
-        </p>
-      </header>
-
-      {universities.length === 0 ? (
-        <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
-          You haven&apos;t added any universities yet. Go to{" "}
-          <button
-            onClick={() => navigate("/universities")}
+          <p
             style={{
-              border: "none",
-              background: "none",
+              fontSize: "0.78rem",
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
               color: "#0f766e",
-              cursor: "pointer",
-              textDecoration: "underline",
-              padding: 0,
+              fontWeight: 600,
+            }}
+          >
+            Your saved choices
+          </p>
+          <h1
+            style={{
+              fontSize: "1.8rem",
+              fontWeight: 800,
+              color: "#020617",
+            }}
+          >
+            Shortlisted universities
+          </h1>
+          <p style={{ color: "#64748b", fontSize: "0.95rem", maxWidth: "40rem" }}>
+            Use this list to discuss options with parents, teachers or friends.
+            You can open details, compare up to 3 universities, or clear your
+            shortlist and start again.
+          </p>
+
+          {/* top actions */}
+          <div
+            style={{
+              marginTop: "0.6rem",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "0.6rem",
+            }}
+          >
+            <button
+              onClick={() => navigate("/universities")}
+              style={{
+                padding: "0.45rem 1rem",
+                borderRadius: "999px",
+                border: "1px solid #cbd5f5",
+                backgroundColor: "white",
+                fontSize: "0.85rem",
+                cursor: "pointer",
+              }}
+            >
+              ← Back to Explore
+            </button>
+
+            <button
+              onClick={() => navigate("/compare")}
+              style={{
+                padding: "0.45rem 1rem",
+                borderRadius: "999px",
+                border: "none",
+                background:
+                  "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
+                color: "white",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Open compare
+            </button>
+
+            <button
+              onClick={handleClearAll}
+              style={{
+                padding: "0.45rem 1rem",
+                borderRadius: "999px",
+                border: "1px solid #fecaca",
+                backgroundColor: "#fee2e2",
+                color: "#b91c1c",
+                fontSize: "0.85rem",
+                cursor: shortlist.length ? "pointer" : "not-allowed",
+                opacity: shortlist.length ? 1 : 0.6,
+              }}
+              disabled={shortlist.length === 0}
+            >
+              Clear shortlist
+            </button>
+          </div>
+        </header>
+
+        {/* EMPTY STATE */}
+        {shortlist.length === 0 && (
+          <div
+            style={{
+              marginTop: "1.2rem",
+              padding: "1.4rem 1.6rem",
+              borderRadius: "1rem",
+              backgroundColor: "#e5e7eb",
+              border: "1px solid #cbd5f5",
+              color: "#475569",
               fontSize: "0.95rem",
             }}
           >
-            Explore
-          </button>{" "}
-          and save some universities to see them here.
-        </p>
-      ) : (
+            You haven&apos;t added any universities to your shortlist yet.
+            Browse the{" "}
+            <button
+              onClick={() => navigate("/universities")}
+              style={{
+                border: "none",
+                background: "none",
+                color: "#2563eb",
+                textDecoration: "underline",
+                cursor: "pointer",
+                padding: 0,
+                margin: 0,
+                fontSize: "0.95rem",
+              }}
+            >
+              Explore
+            </button>{" "}
+            page and click &quot;Save to shortlist&quot; on universities you like.
+          </div>
+        )}
+
+        {/* SHORTLISTED CARDS */}
         <div
           style={{
             display: "flex",
@@ -69,94 +207,159 @@ export default function Shortlist() {
             marginTop: "1rem",
           }}
         >
-          {universities.map((uni) => (
-            <article
-              key={uni._id}
-              style={{
-                borderRadius: "0.75rem",
-                padding: "1.25rem 1.5rem",
-                backgroundColor: "#020617",
-                color: "white",
-                boxShadow: "0 8px 20px rgba(15,23,42,0.6)",
-              }}
-            >
-              <h2
+          {shortlist.map((uni) => {
+            const inCompare = isInCompareList(uni._id);
+
+            return (
+              <article
+                key={uni._id}
+                onClick={() => navigate(`/universities/${uni._id}`)}
                 style={{
-                  margin: 0,
-                  marginBottom: "0.4rem",
-                  fontSize: "1.1rem",
-                  fontWeight: 700,
+                  borderRadius: "0.9rem",
+                  padding: "1.25rem 1.5rem",
+                  backgroundColor: "#020617",
+                  color: "white",
+                  boxShadow: "0 10px 26px rgba(15,23,42,0.7)",
+                  cursor: "pointer",
+                  border: "1px solid rgba(148, 163, 184, 0.45)",
                 }}
               >
-                {uni.name || "Unnamed University"}
-              </h2>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                    gap: "1rem",
+                    marginBottom: "0.4rem",
+                  }}
+                >
+                  <div>
+                    <h2
+                      style={{
+                        margin: 0,
+                        marginBottom: "0.2rem",
+                        fontSize: "1.1rem",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {uni.name || "Unnamed University"}
+                    </h2>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "0.88rem",
+                        color: "#cbd5f5",
+                      }}
+                    >
+                      📍 {uni.location || uni.city || "Location not specified"}
+                      {uni.province ? `, ${uni.province}` : ""}
+                    </p>
+                    <p
+                      style={{
+                        margin: "0.2rem 0 0",
+                        fontSize: "0.88rem",
+                        color: "#facc15",
+                      }}
+                    >
+                      Ranking:{" "}
+                      <span style={{ fontWeight: 600 }}>
+                        {uni.ranking != null ? `#${uni.ranking}` : "N/A"}
+                      </span>
+                    </p>
+                  </div>
 
-              <p style={{ margin: 0, fontSize: "0.9rem", color: "#cbd5f5" }}>
-                Location:{" "}
-                <span style={{ color: "#e5e7eb" }}>
-                  {uni.location || uni.city || "Not specified"}
-                  {uni.province ? `, ${uni.province}` : ""}
-                </span>
-              </p>
+                  {/* remove button */}
+                  <button
+                    onClick={(e) => handleRemove(uni._id, e)}
+                    style={{
+                      borderRadius: "999px",
+                      border: "1px solid #fecaca",
+                      backgroundColor: "#fee2e2",
+                      color: "#b91c1c",
+                      fontSize: "0.78rem",
+                      padding: "0.25rem 0.7rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
 
-              <p style={{ margin: "0.15rem 0", fontSize: "0.9rem" }}>
-                Ranking:{" "}
-                <span style={{ fontWeight: 600 }}>
-                  {uni.ranking != null ? uni.ranking : "N/A"}
-                </span>
-              </p>
+                {/* programs */}
+                <p
+                  style={{
+                    margin: "0.25rem 0 0.4rem",
+                    fontSize: "0.88rem",
+                  }}
+                >
+                  Programs:{" "}
+                  {Array.isArray(uni.programs) && uni.programs.length > 0 ? (
+                    <span>{uni.programs.join(", ")}</span>
+                  ) : (
+                    <span>Not listed</span>
+                  )}
+                </p>
 
-              <p style={{ margin: "0.15rem 0 0.35rem", fontSize: "0.9rem" }}>
-                Programs:{" "}
-                {Array.isArray(uni.programs) && uni.programs.length > 0 ? (
-                  <span>{uni.programs.join(", ")}</span>
-                ) : (
-                  <span>Not listed</span>
+                {/* website */}
+                {uni.website && (
+                  <a
+                    href={uni.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      display: "inline-block",
+                      marginTop: "0.25rem",
+                      fontSize: "0.85rem",
+                      color: "#38bdf8",
+                      textDecoration: "underline",
+                    }}
+                  >
+                    Visit website
+                  </a>
                 )}
-              </p>
 
-              <div
-                style={{
-                  marginTop: "0.6rem",
-                  display: "flex",
-                  gap: "0.75rem",
-                  flexWrap: "wrap",
-                }}
-              >
-                <button
-                  onClick={() => handleViewDetails(uni._id)}
+                {/* actions */}
+                <div
                   style={{
-                    padding: "0.4rem 0.9rem",
-                    borderRadius: "999px",
-                    border: "1px solid #cbd5f5",
-                    backgroundColor: "white",
-                    color: "#0f172a",
-                    fontSize: "0.85rem",
-                    cursor: "pointer",
+                    marginTop: "0.7rem",
+                    display: "flex",
+                    gap: "0.7rem",
+                    alignItems: "center",
+                    flexWrap: "wrap",
                   }}
                 >
-                  View details
-                </button>
+                  <button
+                    onClick={(e) => handleToggleCompare(uni, e)}
+                    style={{
+                      padding: "0.35rem 0.9rem",
+                      borderRadius: "999px",
+                      border: "1px solid #bfdbfe",
+                      backgroundColor: inCompare ? "#3b82f6" : "#020617",
+                      color: "white",
+                      fontSize: "0.82rem",
+                      cursor: "pointer",
+                      fontWeight: 500,
+                    }}
+                  >
+                    {inCompare ? "Remove from compare" : "Add to compare"}
+                  </button>
 
-                <button
-                  onClick={() => handleRemove(uni._id)}
-                  style={{
-                    padding: "0.4rem 0.9rem",
-                    borderRadius: "999px",
-                    border: "1px solid #fecaca",
-                    backgroundColor: "#fee2e2",
-                    color: "#b91c1c",
-                    fontSize: "0.85rem",
-                    cursor: "pointer",
-                  }}
-                >
-                  Remove from shortlist
-                </button>
-              </div>
-            </article>
-          ))}
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "0.8rem",
+                      color: "#a5b4fc",
+                    }}
+                  >
+                    Click card to view full details →
+                  </p>
+                </div>
+              </article>
+            );
+          })}
         </div>
-      )}
+      </div>
     </div>
   );
 }

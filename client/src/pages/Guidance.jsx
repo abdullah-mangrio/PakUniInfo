@@ -97,14 +97,71 @@ export default function Guidance() {
     }
   };
 
+  // --- SHARED STYLES ---
+  const outerCardStyle = {
+    borderRadius: "1.25rem",
+    background:
+      "radial-gradient(circle at top left, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%)",
+    padding: "2.4rem 2.6rem",
+    boxShadow: "0 26px 70px rgba(15,23,42,0.7)",
+    marginTop: "1.5rem",
+  };
+
+  const formCardStyle = {
+    marginBottom: "1.9rem",
+    padding: "1.25rem 1.5rem",
+    borderRadius: "1rem",
+    backgroundColor: "#e5e7eb",
+    border: "1px solid #cbd5f5",
+    boxShadow: "0 8px 20px rgba(148,163,184,0.6)",
+  };
+
+  const labelStyle = {
+    fontSize: "0.85rem",
+    fontWeight: 500,
+    color: "#0f172a",
+  };
+
+  const inputStyle = {
+    padding: "0.55rem 0.7rem",
+    borderRadius: "0.5rem",
+    border: "1px solid #cbd5f5",
+    fontSize: "0.9rem",
+    backgroundColor: "white",
+  };
+
+  const primaryButtonStyle = {
+    padding: "0.55rem 1.4rem",
+    borderRadius: "999px",
+    border: "none",
+    background:
+      "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
+    color: "white",
+    fontWeight: 600,
+    fontSize: "0.9rem",
+    cursor: "pointer",
+    boxShadow: "0 10px 24px rgba(16, 185, 129, 0.55)",
+  };
+
+  const secondaryButtonStyle = {
+    padding: "0.5rem 1rem",
+    borderRadius: "999px",
+    border: "1px solid #cbd5f5",
+    backgroundColor: "white",
+    fontSize: "0.9rem",
+    cursor: "pointer",
+    color: "#0f172a",
+  };
+
   return (
-    <div>
-      <header style={{ marginBottom: "1.5rem" }}>
+    <div style={outerCardStyle}>
+      {/* HEADER */}
+      <header style={{ marginBottom: "1.6rem" }}>
         <p
           style={{
             fontSize: "0.8rem",
             textTransform: "uppercase",
-            letterSpacing: "0.08em",
+            letterSpacing: "0.14em",
             color: "#0f766e",
             marginBottom: "0.3rem",
             fontWeight: 600,
@@ -114,32 +171,29 @@ export default function Guidance() {
         </p>
         <h1
           style={{
-            fontSize: "1.7rem",
+            fontSize: "1.9rem",
             fontWeight: 800,
-            marginBottom: "0.4rem",
-            color: "#0f172a",
+            marginBottom: "0.45rem",
+            color: "#020617",
           }}
         >
           Find universities that match your profile.
         </h1>
-        <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
+        <p
+          style={{
+            color: "#64748b",
+            fontSize: "0.95rem",
+            maxWidth: "40rem",
+          }}
+        >
           Answer a few quick questions and we&apos;ll suggest universities that
           roughly match your location, program interest, and marks. In the
           future this flow can be powered by a real AI advisor.
         </p>
       </header>
 
-      {/* FORM */}
-      <section
-        style={{
-          marginBottom: "1.8rem",
-          padding: "1.2rem 1.4rem",
-          borderRadius: "0.9rem",
-          backgroundColor: "#e5e7eb",
-          border: "1px solid #cbd5f5",
-          boxShadow: "0 8px 20px rgba(148,163,184,0.6)",
-        }}
-      >
+      {/* FORM CARD */}
+      <section style={formCardStyle}>
         <form
           onSubmit={handleSubmit}
           style={{
@@ -150,18 +204,11 @@ export default function Guidance() {
         >
           {/* Province */}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-              Preferred province
-            </label>
+            <label style={labelStyle}>Preferred province</label>
             <select
               value={province}
               onChange={(e) => setProvince(e.target.value)}
-              style={{
-                padding: "0.55rem 0.7rem",
-                borderRadius: "0.5rem",
-                border: "1px solid #cbd5f5",
-                fontSize: "0.9rem",
-              }}
+              style={inputStyle}
             >
               {PROVINCES.map((p) => (
                 <option key={p} value={p}>
@@ -173,18 +220,11 @@ export default function Guidance() {
 
           {/* City */}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-              Preferred city
-            </label>
+            <label style={labelStyle}>Preferred city</label>
             <select
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              style={{
-                padding: "0.55rem 0.7rem",
-                borderRadius: "0.5rem",
-                border: "1px solid #cbd5f5",
-                fontSize: "0.9rem",
-              }}
+              style={inputStyle}
             >
               {CITIES.map((c) => (
                 <option key={c} value={c}>
@@ -196,18 +236,13 @@ export default function Guidance() {
 
           {/* Program */}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+            <label style={labelStyle}>
               Program you&apos;re interested in
             </label>
             <select
               value={program}
               onChange={(e) => setProgram(e.target.value)}
-              style={{
-                padding: "0.55rem 0.7rem",
-                borderRadius: "0.5rem",
-                border: "1px solid #cbd5f5",
-                fontSize: "0.9rem",
-              }}
+              style={inputStyle}
             >
               {PROGRAMS.map((p) => (
                 <option key={p} value={p}>
@@ -225,7 +260,7 @@ export default function Guidance() {
               gap: "0.35rem",
             }}
           >
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+            <label style={labelStyle}>
               Your current marks / expected grade
             </label>
             <div
@@ -237,7 +272,13 @@ export default function Guidance() {
                 color: "#0f172a",
               }}
             >
-              <label style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+              <label
+                style={{
+                  display: "flex",
+                  gap: "0.4rem",
+                  alignItems: "center",
+                }}
+              >
                 <input
                   type="radio"
                   name="marksBand"
@@ -247,7 +288,13 @@ export default function Guidance() {
                 />
                 85% or above / A grade
               </label>
-              <label style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+              <label
+                style={{
+                  display: "flex",
+                  gap: "0.4rem",
+                  alignItems: "center",
+                }}
+              >
                 <input
                   type="radio"
                   name="marksBand"
@@ -257,7 +304,13 @@ export default function Guidance() {
                 />
                 Around 70% – 85%
               </label>
-              <label style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
+              <label
+                style={{
+                  display: "flex",
+                  gap: "0.4rem",
+                  alignItems: "center",
+                }}
+              >
                 <input
                   type="radio"
                   name="marksBand"
@@ -270,7 +323,7 @@ export default function Guidance() {
             </div>
           </div>
 
-          {/* Submit */}
+          {/* Buttons */}
           <div
             style={{
               gridColumn: "1 / -1",
@@ -278,19 +331,13 @@ export default function Guidance() {
               justifyContent: "flex-end",
               marginTop: "0.4rem",
               gap: "0.6rem",
+              flexWrap: "wrap",
             }}
           >
             <button
               type="button"
               onClick={() => navigate("/universities")}
-              style={{
-                padding: "0.5rem 1rem",
-                borderRadius: "999px",
-                border: "1px solid #cbd5f5",
-                backgroundColor: "white",
-                fontSize: "0.9rem",
-                cursor: "pointer",
-              }}
+              style={secondaryButtonStyle}
             >
               Browse manually instead
             </button>
@@ -298,16 +345,9 @@ export default function Guidance() {
               type="submit"
               disabled={loading}
               style={{
-                padding: "0.55rem 1.4rem",
-                borderRadius: "999px",
-                border: "none",
-                background:
-                  "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
-                color: "white",
-                fontWeight: 600,
-                fontSize: "0.9rem",
+                ...primaryButtonStyle,
                 cursor: loading ? "not-allowed" : "pointer",
-                boxShadow: "0 10px 24px rgba(16, 185, 129, 0.55)",
+                opacity: loading ? 0.85 : 1,
               }}
             >
               {loading ? "Finding universities..." : "Get recommendations"}
@@ -316,11 +356,14 @@ export default function Guidance() {
         </form>
       </section>
 
-      {/* RESULTS */}
+      {/* ERROR */}
       {error && (
-        <p style={{ color: "crimson", fontSize: "0.95rem" }}>{error}</p>
+        <p style={{ color: "crimson", fontSize: "0.95rem", marginBottom: "0.9rem" }}>
+          {error}
+        </p>
       )}
 
+      {/* RESULTS */}
       {!loading && !error && recommendations.length > 0 && (
         <section>
           <p
@@ -345,12 +388,13 @@ export default function Guidance() {
                 key={uni._id}
                 onClick={() => navigate(`/universities/${uni._id}`)}
                 style={{
-                  borderRadius: "0.75rem",
+                  borderRadius: "0.9rem",
                   padding: "1.1rem 1.3rem",
                   backgroundColor: "#020617",
                   color: "white",
-                  boxShadow: "0 8px 20px rgba(15,23,42,0.6)",
+                  boxShadow: "0 10px 24px rgba(15,23,42,0.8)",
                   cursor: "pointer",
+                  border: "1px solid rgba(148,163,184,0.55)",
                 }}
               >
                 <h2
@@ -375,7 +419,7 @@ export default function Guidance() {
                 </p>
                 <p
                   style={{
-                    margin: "0.2rem 0",
+                    margin: "0.25rem 0 0.15rem",
                     fontSize: "0.88rem",
                   }}
                 >
@@ -402,7 +446,7 @@ export default function Guidance() {
       )}
 
       {!loading && !error && recommendations.length === 0 && (
-        <p style={{ color: "#64748b", fontSize: "0.9rem" }}>
+        <p style={{ color: "#64748b", fontSize: "0.9rem", marginTop: "0.4rem" }}>
           Fill the form above and click &quot;Get recommendations&quot; to see
           suggested universities.
         </p>
