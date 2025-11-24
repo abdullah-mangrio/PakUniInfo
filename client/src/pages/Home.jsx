@@ -14,28 +14,25 @@ export default function Home() {
       <div
         style={{
           width: "100%",
-          borderRadius: "1.25rem",
-          backgroundColor: "#f9fafb",
-          padding: "2.5rem 2.75rem",
-          boxShadow: "0 32px 80px rgba(15,23,42,0.75)",
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1.6fr) minmax(0, 1.2fr)",
-          gap: "2.25rem",
+          gridTemplateColumns: "minmax(0, 1.7fr) minmax(0, 1.1fr)",
+          gap: "2rem",
+          alignItems: "center",
         }}
       >
-        {/* LEFT SIDE – HERO COPY */}
+        {/* Left: hero text */}
         <section>
           <p
             style={{
-              fontSize: "0.83rem",
+              fontSize: "0.85rem",
+              fontWeight: 600,
               letterSpacing: "0.16em",
               textTransform: "uppercase",
-              color: "#0f766e",
-              fontWeight: 600,
-              marginBottom: "0.55rem",
+              color: "#10b981",
+              marginBottom: "0.5rem",
             }}
           >
-            Pakistan University Guidance
+            Built for students in Pakistan
           </p>
 
           <h1
@@ -66,6 +63,20 @@ export default function Home() {
             confidence.
           </p>
 
+          <p
+            style={{
+              fontSize: "0.8rem",
+              color: "#94a3b8",
+              marginBottom: "1.6rem",
+            }}
+          >
+            Built as a student project by{" "}
+            <span style={{ fontWeight: 600, color: "#059669" }}>
+              Abdullah Mangrio
+            </span>
+            , for students across Pakistan.
+          </p>
+
           {/* CTA BUTTONS */}
           <div
             style={{
@@ -87,16 +98,16 @@ export default function Home() {
                 fontWeight: 600,
                 fontSize: "0.95rem",
                 cursor: "pointer",
-                boxShadow: "0 14px 30px rgba(22,163,74,0.6)",
+                boxShadow: "0 18px 40px rgba(22,163,74,0.55)",
               }}
             >
               Explore universities
             </button>
 
             <button
-              onClick={() => navigate("/guidance")}
+              onClick={() => navigate("/compare")}
               style={{
-                padding: "0.75rem 1.5rem",
+                padding: "0.75rem 1.4rem",
                 borderRadius: "999px",
                 border: "1px solid #cbd5f5",
                 backgroundColor: "white",
@@ -106,79 +117,95 @@ export default function Home() {
                 cursor: "pointer",
               }}
             >
-              How PakUniInfo helps
+              Compare options
             </button>
           </div>
 
-          {/* LITTLE TAGS */}
-          <div
+          {/* Small text */}
+          <p
             style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "1.4rem",
-              fontSize: "0.85rem",
+              fontSize: "0.8rem",
               color: "#64748b",
+              maxWidth: "32rem",
             }}
           >
-            <span>🎓 For FSC, ICS &amp; A-level students</span>
-            <span>👨‍👩‍👧 Built for parents &amp; teachers too</span>
-          </div>
+            Start simple: filter by city or province, shortlist a few
+            universities, and then compare details like programs offered and
+            overall feel. Use this as a starting point alongside official
+            university websites and counsellors.
+          </p>
         </section>
 
-        {/* RIGHT SIDE – WHY USE BOX */}
+        {/* Right: highlight card */}
         <aside
           style={{
-            borderRadius: "1.1rem",
-            padding: "1.5rem 1.75rem",
+            borderRadius: "1.25rem",
+            padding: "1.25rem 1.4rem",
             background:
-              "radial-gradient(circle at 0% 0%, #e0f2fe 0, #1f2937 42%, #020617 100%)",
+              "radial-gradient(circle at top left, #22c55e, #0f172a 60%, #020617)",
             color: "white",
-            boxShadow: "0 26px 60px rgba(15,23,42,0.9)",
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
+            boxShadow: "0 20px 45px rgba(15,23,42,0.85)",
           }}
         >
-          <h2
+          <p
             style={{
-              fontSize: "1.1rem",
-              fontWeight: 700,
-              marginBottom: "0.75rem",
+              fontSize: "0.8rem",
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              margin: 0,
+              marginBottom: "0.6rem",
+              color: "#bbf7d0",
+              fontWeight: 600,
             }}
           >
-            Why use PakUniInfo?
-          </h2>
+            What can you do here?
+          </p>
 
           <ul
             style={{
-              listStyle: "none",
-              padding: 0,
               margin: 0,
+              paddingLeft: "1.1rem",
               fontSize: "0.9rem",
               lineHeight: 1.7,
-              color: "#e5e7eb",
             }}
           >
             <li>
-              • Filter universities by{" "}
-              <span style={{ fontWeight: 600 }}>province, city and programs</span>.
+              <strong>Browse universities</strong> by city, province and
+              programs.
             </li>
             <li>
-              • See{" "}
-              <span style={{ fontWeight: 600 }}>rankings and key information</span>{" "}
-              in one place.
+              <strong>See details</strong> like description, basic fees and
+              admission notes (where available).
             </li>
             <li>
-              • Save options to a{" "}
-              <span style={{ fontWeight: 600 }}>personal shortlist</span> and
-              compare side by side.
+              <strong>Shortlist</strong> interesting options and review them
+              later.
             </li>
             <li>
-              • Use the{" "}
-              <span style={{ fontWeight: 600 }}>Guidance</span> page for
-              AI-ready, rule-based recommendations.
+              <strong>Compare universities</strong> side-by-side to understand
+              differences.
             </li>
           </ul>
+
+          <hr
+            style={{
+              border: "none",
+              borderTop: "1px solid rgba(226,232,240,0.2)",
+              margin: "0.9rem 0",
+            }}
+          />
+
+          <p
+            style={{
+              fontSize: "0.8rem",
+              margin: 0,
+              color: "#e5e7eb",
+            }}
+          >
+            This isn&apos;t an official ranking or admissions portal — it&apos;s
+            a helper tool to explore options. Always confirm final details with
+            the university&apos;s official website.
+          </p>
 
           <p
             style={{

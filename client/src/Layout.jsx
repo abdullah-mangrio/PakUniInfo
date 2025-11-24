@@ -1,4 +1,5 @@
 import Navbar from "./components/Navbar";
+import Footer from "./components/Footer";
 
 export default function Layout({ children }) {
   return (
@@ -6,9 +7,11 @@ export default function Layout({ children }) {
       style={{
         minHeight: "100vh",
         background: "linear-gradient(135deg, #0f172a, #020617)",
+        paddingBottom: "2rem",
       }}
     >
       <Navbar />
+
       <main
         style={{
           maxWidth: "1120px",
@@ -21,6 +24,8 @@ export default function Layout({ children }) {
       >
         {children}
       </main>
+
+      <Footer />
     </div>
   );
 }
