@@ -1,9 +1,13 @@
+// server.js
 import express from "express";
-import { connectDB } from "./config.js";
 import dotenv from "dotenv";
-import universityRoutes from "./routes/universityRoutes.js"; // ✅ Step 1: Import routes
 import cors from "cors";
+import jwt from "jsonwebtoken";
+import { connectDB } from "./config.js";
+import universityRoutes from "./routes/universityRoutes.js";
+import University from "./models/University.js";
 
+import adminRoutes from "./routes/adminRoutes.js";
 
 dotenv.config();
 
@@ -11,25 +15,62 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 app.use(express.json());
+app.use(cors());
 
+app.use("/api/admin", adminRoutes);
 
-app.use(cors()); // allow all origins in development
+// ======= DEBUG: see every incoming request path/method =======
+app.use((req, res, next) => {
+  console.log("INCOMING:", req.method, req.url);
+  next();
+});
+// ============================================================
 
+// ============== INLINE ADMIN LOGIN ROUTE ====================
+app.post("/api/admin/login", (req, res) => {
+  const { email, password } = req.body || {};
 
+  console.log("LOGIN BODY:", email, password);
+  console.log("ENV EMAIL:", process.env.ADMIN_EMAIL);
+  console.log("ENV PASS:", process.env.ADMIN_PASSWORD);
+  console.log("JWT_SECRET set:", !!process.env.JWT_SECRET);
 
-// ✅ Step 2: Use the university routes
+  const envEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
+  const envPassword = (process.env.ADMIN_PASSWORD || "").trim();
+  const inputEmail = (email || "").trim().toLowerCase();
+  const inputPassword = (password || "").trim();
+
+  if (!envEmail || !envPassword || !process.env.JWT_SECRET) {
+    return res
+      .status(500)
+      .json({ message: "Admin credentials or JWT secret not configured" });
+  }
+
+  if (inputEmail !== envEmail || inputPassword !== envPassword) {
+    return res.status(401).json({ message: "Invalid admin credentials" });
+  }
+
+  const token = jwt.sign(
+    { email: envEmail, role: "admin" },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  return res.json({ token });
+});
+// ============================================================
+
+// University routes
 app.use("/api/universities", universityRoutes);
 
-// (Optional) You can keep your sample route for testing:
-import University from "./models/University.js";
-
+// (Optional) sample route for testing
 app.get("/add-sample", async (req, res) => {
   try {
     const sampleUni = new University({
       name: "FAST NUCES",
       city: "Peshawar",
       ranking: 1,
-      programs: ["BSCS", "BSEE", "BSIT"]
+      programs: ["BSCS", "BSEE", "BSIT"],
     });
 
     await sampleUni.save();

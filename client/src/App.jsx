@@ -1,3 +1,4 @@
+import AdminLogin from "./pages/AdminLogin";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import ExploreUniversities from "./pages/ExploreUniversities";
@@ -20,6 +21,7 @@ function App() {
           <Route path="/shortlist" element={<Shortlist />} />
           <Route path="/compare" element={<Compare />} />
           <Route path="/guidance" element={<Guidance />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/universities" element={<AdminUniversities />} />
           <Route path="/about" element={<About />} />
         </Routes>

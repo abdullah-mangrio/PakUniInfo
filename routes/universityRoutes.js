@@ -1,14 +1,21 @@
 import express from "express";
-import { getUniversities, addUniversity, getUniversityById, updateUniversity, deleteUniversity } from "../controllers/universityController.js";
+import { getUniversities,
+         addUniversity,
+         getUniversityById,
+         updateUniversity, 
+         deleteUniversity 
+} from "../controllers/universityController.js";
+import { requireAdmin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
+// Public reads
 router.get("/", getUniversities);
-router.post("/", addUniversity);
 router.get("/:id", getUniversityById);
-router.put("/:id", updateUniversity);
-router.delete("/:id", deleteUniversity);
 
-
+// Protected writes
+router.post("/", requireAdmin, addUniversity);
+router.put("/:id", requireAdmin, updateUniversity);
+router.delete("/:id", requireAdmin, deleteUniversity);
 
 export default router;
