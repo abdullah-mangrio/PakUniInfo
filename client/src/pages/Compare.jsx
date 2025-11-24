@@ -1,9 +1,7 @@
 import React from "react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  getShortlist,
-} from "../utils/shortlist";
+import { getShortlist } from "../utils/shortlist";
 import {
   getCompareList,
   addToCompare,
@@ -224,10 +222,8 @@ export default function Compare() {
                   !shortlist || shortlist.length === 0
                     ? "not-allowed"
                     : "pointer",
-                opacity:
-                  !shortlist || shortlist.length === 0 ? 0.6 : 1,
-                boxShadow:
-                  "0 10px 24px rgba(16, 185, 129, 0.45)",
+                opacity: !shortlist || shortlist.length === 0 ? 0.6 : 1,
+                boxShadow: "0 10px 24px rgba(16, 185, 129, 0.45)",
               }}
             >
               Load first 3 from shortlist
@@ -258,94 +254,97 @@ export default function Compare() {
       {compareUnis.length === 0 && (
         <section
           style={{
-            padding: "1.75rem 1.5rem",
+            marginTop: "0.4rem",
+            padding: "1.6rem 1.8rem",
             borderRadius: "1rem",
-            border: "1px dashed #cbd5f5",
-            backgroundColor: "#f8fafc",
-            display: "grid",
-            gap: "0.75rem",
+            backgroundColor: "#e5e7eb",
+            border: "1px solid #cbd5f5",
+            display: "flex",
+            alignItems: "flex-start",
+            gap: "1rem",
           }}
         >
-          <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
-            <div
+          <div
+            style={{
+              fontSize: "2rem",
+              lineHeight: 1,
+            }}
+          >
+            📊
+          </div>
+          <div>
+            <h3
               style={{
-                width: "2.25rem",
-                height: "2.25rem",
-                borderRadius: "999px",
-                background:
-                  "radial-gradient(circle at 30% 20%, #4f46e5, #0f172a)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "white",
-                fontSize: "1.1rem",
+                margin: 0,
+                marginBottom: "0.4rem",
+                fontSize: "1rem",
+                fontWeight: 600,
+                color: "#0f172a",
               }}
             >
-              🔍
-            </div>
-            <div>
-              <h2
+              No universities selected for comparison yet
+            </h3>
+            <p
+              style={{
+                margin: 0,
+                marginBottom: "0.8rem",
+                fontSize: "0.92rem",
+                color: "#475569",
+                lineHeight: 1.5,
+              }}
+            >
+              Start by adding universities to your comparison list. You can add
+              them directly from the Explore page or load them from your
+              shortlist.
+            </p>
+
+            <div
+              style={{
+                display: "flex",
+                gap: "0.6rem",
+                flexWrap: "wrap",
+              }}
+            >
+              <button
+                type="button"
+                onClick={goToExplore}
                 style={{
-                  margin: 0,
-                  marginBottom: "0.15rem",
-                  fontSize: "1rem",
-                  fontWeight: 600,
+                  padding: "0.5rem 1rem",
+                  borderRadius: "999px",
+                  border: "none",
+                  background:
+                    "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(37,99,235,0.95))",
+                  color: "white",
+                  fontSize: "0.85rem",
+                  fontWeight: 500,
+                  cursor: "pointer",
+                  boxShadow: "0 5px 14px rgba(15,23,42,0.55)",
+                }}
+              >
+                Go to Explore
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLoadFromShortlist}
+                disabled={!shortlist || shortlist.length === 0}
+                style={{
+                  padding: "0.5rem 1rem",
+                  borderRadius: "999px",
+                  border: "1px solid #cbd5f5",
+                  backgroundColor: "white",
+                  fontSize: "0.85rem",
+                  cursor:
+                    !shortlist || shortlist.length === 0
+                      ? "not-allowed"
+                      : "pointer",
+                  opacity: !shortlist || shortlist.length === 0 ? 0.6 : 1,
                   color: "#0f172a",
                 }}
               >
-                No universities in comparison yet
-              </h2>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "0.9rem",
-                  color: "#64748b",
-                }}
-              >
-                Go back to Explore and add up to 3 universities to compare, or
-                quickly load from your shortlist.
-              </p>
+                Load from shortlist
+              </button>
             </div>
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "0.6rem",
-              marginTop: "0.5rem",
-            }}
-          >
-            <button
-              onClick={goToExplore}
-              style={{
-                padding: "0.5rem 1rem",
-                borderRadius: "999px",
-                border: "none",
-                background:
-                  "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(37,99,235,0.95))",
-                color: "white",
-                fontSize: "0.85rem",
-                fontWeight: 500,
-                cursor: "pointer",
-                boxShadow: "0 5px 14px rgba(15,23,42,0.55)",
-              }}
-            >
-              Browse universities
-            </button>
-            <button
-              onClick={goToShortlist}
-              style={{
-                padding: "0.5rem 1rem",
-                borderRadius: "999px",
-                border: "1px solid #cbd5f5",
-                backgroundColor: "white",
-                fontSize: "0.85rem",
-                cursor: "pointer",
-              }}
-            >
-              View shortlist
-            </button>
           </div>
         </section>
       )}
@@ -527,9 +526,7 @@ export default function Compare() {
                           </div>
                         </div>
                         <button
-                          onClick={() =>
-                            navigate(`/universities/${uni._id}`)
-                          }
+                          onClick={() => navigate(`/universities/${uni._id}`)}
                           style={{
                             padding: "0.3rem 0.7rem",
                             borderRadius: "999px",
@@ -539,8 +536,7 @@ export default function Compare() {
                             background:
                               "linear-gradient(to right, #0ea5e9, #6366f1)",
                             color: "white",
-                            boxShadow:
-                              "0 6px 16px rgba(59,130,246,0.55)",
+                            boxShadow: "0 6px 16px rgba(59,130,246,0.55)",
                           }}
                         >
                           View
@@ -551,7 +547,6 @@ export default function Compare() {
                 </tr>
               </thead>
               <tbody>
-                {/* Attribute rows */}
                 {attributeRow("Ranking", (uni) =>
                   typeof uni.ranking === "number"
                     ? `#${uni.ranking}`
@@ -699,8 +694,8 @@ export default function Compare() {
             >
               Explore
             </button>{" "}
-            page and click &quot;Save to shortlist&quot; on any university
-            you like.
+            page and click &quot;Save to shortlist&quot; on any university you
+            like.
           </p>
         )}
 

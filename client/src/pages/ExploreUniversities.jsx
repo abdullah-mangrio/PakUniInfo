@@ -448,12 +448,74 @@ export default function ExploreUniversities() {
         <p style={{ color: "crimson", fontSize: "0.95rem" }}>{error}</p>
       )}
 
-      {!loading && !error && universities.length === 0 && (
-        <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
-          No universities found with these filters. Try clearing filters or
-          searching with a different name.
-        </p>
-      )}
+              {!loading && !error && universities.length === 0 && (
+          <div
+            style={{
+              marginTop: "1.2rem",
+              padding: "1.6rem 1.8rem",
+              borderRadius: "1rem",
+              backgroundColor: "#e5e7eb",
+              border: "1px solid #cbd5f5",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "1rem",
+            }}
+          >
+            <div
+              style={{
+                fontSize: "2rem",
+                lineHeight: 1,
+              }}
+            >
+              🔍
+            </div>
+            <div>
+              <h3
+                style={{
+                  margin: 0,
+                  marginBottom: "0.4rem",
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  color: "#0f172a",
+                }}
+              >
+                No universities match these filters
+              </h3>
+              <p
+                style={{
+                  margin: 0,
+                  marginBottom: "0.8rem",
+                  fontSize: "0.92rem",
+                  color: "#475569",
+                  lineHeight: 1.5,
+                }}
+              >
+                We couldn&apos;t find any universities with the current search
+                and filters. Try clearing some filters, removing the search
+                text, or choosing a different city / province.
+              </p>
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                style={{
+                  padding: "0.45rem 1.1rem",
+                  borderRadius: "999px",
+                  border: "none",
+                  background:
+                    "linear-gradient(to right, #16a34a, #22c55e, #4ade80)",
+                  color: "white",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  boxShadow: "0 10px 24px rgba(22,163,74,0.55)",
+                }}
+              >
+                Clear all filters
+              </button>
+            </div>
+          </div>
+        )}
+
 
       {/* LIST OF UNIVERSITIES */}
       <div

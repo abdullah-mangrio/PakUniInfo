@@ -1,5 +1,5 @@
-import AdminLogin from "./pages/AdminLogin";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import AdminLogin from "./pages/AdminLogin";
 import Home from "./pages/Home";
 import ExploreUniversities from "./pages/ExploreUniversities";
 import UniversityDetails from "./pages/UniversityDetails";
@@ -9,6 +9,8 @@ import AdminUniversities from "./pages/AdminUniversities";
 import Compare from "./pages/Compare";
 import Guidance from "./pages/Guidance";
 import Layout from "./Layout";
+import NotFound from "./pages/NotFound";
+
 
 function App() {
   return (
@@ -24,6 +26,8 @@ function App() {
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/universities" element={<AdminUniversities />} />
           <Route path="/about" element={<About />} />
+          <Route path="*" element={<NotFound />} />
+
         </Routes>
       </Layout>
     </Router>

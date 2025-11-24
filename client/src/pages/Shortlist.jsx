@@ -99,7 +99,9 @@ export default function Shortlist() {
           >
             Shortlisted universities
           </h1>
-          <p style={{ color: "#64748b", fontSize: "0.95rem", maxWidth: "40rem" }}>
+          <p
+            style={{ color: "#64748b", fontSize: "0.95rem", maxWidth: "40rem" }}
+          >
             Use this list to discuss options with parents, teachers or friends.
             You can open details, compare up to 3 universities, or clear your
             shortlist and start again.
@@ -169,32 +171,66 @@ export default function Shortlist() {
           <div
             style={{
               marginTop: "1.2rem",
-              padding: "1.4rem 1.6rem",
+              padding: "1.6rem 1.8rem",
               borderRadius: "1rem",
               backgroundColor: "#e5e7eb",
               border: "1px solid #cbd5f5",
-              color: "#475569",
-              fontSize: "0.95rem",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "1rem",
             }}
           >
-            You haven&apos;t added any universities to your shortlist yet.
-            Browse the{" "}
-            <button
-              onClick={() => navigate("/universities")}
+            <div
               style={{
-                border: "none",
-                background: "none",
-                color: "#2563eb",
-                textDecoration: "underline",
-                cursor: "pointer",
-                padding: 0,
-                margin: 0,
-                fontSize: "0.95rem",
+                fontSize: "2rem",
+                lineHeight: 1,
               }}
             >
-              Explore
-            </button>{" "}
-            page and click &quot;Save to shortlist&quot; on universities you like.
+              ⭐
+            </div>
+            <div>
+              <h3
+                style={{
+                  margin: 0,
+                  marginBottom: "0.4rem",
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  color: "#0f172a",
+                }}
+              >
+                Your shortlist is empty
+              </h3>
+              <p
+                style={{
+                  margin: 0,
+                  marginBottom: "0.8rem",
+                  fontSize: "0.92rem",
+                  color: "#475569",
+                  lineHeight: 1.5,
+                }}
+              >
+                Save universities you&apos;re interested in, and they&apos;ll
+                appear here so you can revisit or compare them later.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate("/universities")}
+                style={{
+                  padding: "0.45rem 1.1rem",
+                  borderRadius: "999px",
+                  border: "none",
+                  background:
+                    "linear-gradient(to right, #16a34a, #22c55e, #4ade80)",
+                  color: "white",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  boxShadow: "0 10px 24px rgba(22,163,74,0.55)",
+                }}
+              >
+                Start exploring
+              </button>
+            </div>
           </div>
         )}
 
