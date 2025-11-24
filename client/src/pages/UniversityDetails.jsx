@@ -5,6 +5,8 @@ import {
   removeFromShortlist,
   isInShortlist,
 } from "../utils/shortlist";
+import LoadingSpinner from "../components/LoadingSpinner";
+import ErrorMessage from "../components/ErrorMessage";
 
 export default function UniversityDetails() {
   const { id } = useParams();
@@ -49,33 +51,34 @@ export default function UniversityDetails() {
     });
   };
 
-  useEffect(() => {
-    const fetchUniversity = async () => {
-      try {
-        setLoading(true);
-        setError("");
+  const fetchUniversity = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-        const res = await fetch(
-          `http://localhost:5000/api/universities/${id}`
-        );
+      const res = await fetch(
+        `http://localhost:5000/api/universities/${id}`
+      );
 
-        if (!res.ok) {
-          throw new Error("Failed to fetch university details.");
-        }
-
-        const data = await res.json();
-        setUniversity(data);
-      } catch (err) {
-        console.error(err);
-        setError(
-          err?.message || "Something went wrong while loading this university."
-        );
-      } finally {
-        setLoading(false);
+      if (!res.ok) {
+        throw new Error("Failed to fetch university details.");
       }
-    };
 
+      const data = await res.json();
+      setUniversity(data);
+    } catch (err) {
+      console.error(err);
+      setError(
+        "We couldn’t load this university right now. Please try again in a moment."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchUniversity();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   // Sync saved state from localStorage
@@ -109,11 +112,9 @@ export default function UniversityDetails() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "0.95rem",
-          color: "#64748b",
         }}
       >
-        Loading university details...
+        <LoadingSpinner />
       </div>
     );
   }
@@ -139,18 +140,7 @@ export default function UniversityDetails() {
         >
           ← Back
         </button>
-        <div
-          style={{
-            padding: "1.5rem 1.75rem",
-            borderRadius: "1.25rem",
-            backgroundColor: "#fee2e2",
-            border: "1px solid #fecaca",
-            color: "#b91c1c",
-            fontSize: "0.95rem",
-          }}
-        >
-          {error}
-        </div>
+        <ErrorMessage message={error} onRetry={fetchUniversity} />
       </div>
     );
   }
@@ -391,7 +381,8 @@ export default function UniversityDetails() {
                     border: "1px solid rgba(148,163,184,0.6)",
                   }}
                 >
-                  📍 {city ? `${city}${province ? `, ${province}` : ""}` : location}
+                  📍{" "}
+                  {city ? `${city}${province ? `, ${province}` : ""}` : location}
                 </span>
               )}
               {ranking && (
