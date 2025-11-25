@@ -17,9 +17,21 @@ export default function Shortlist() {
   const [shortlist, setShortlist] = useState([]);
   const [tick, setTick] = useState(0); // to trigger re-render on changes
 
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+
   useEffect(() => {
     setShortlist(getShortlist());
   }, [tick]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const refreshShortlist = () => {
     setShortlist(getShortlist());
@@ -62,9 +74,10 @@ export default function Shortlist() {
     borderRadius: "1.25rem",
     background:
       "radial-gradient(circle at top left, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%)",
-    padding: "2.4rem 2.6rem",
+    padding: isMobile ? "1.8rem 1.6rem" : "2.4rem 2.6rem",
     boxShadow: "0 26px 70px rgba(15,23,42,0.7)",
     marginTop: "1.5rem",
+    boxSizing: "border-box",
   };
 
   return (
@@ -76,42 +89,49 @@ export default function Shortlist() {
             marginBottom: "1.4rem",
             display: "flex",
             flexDirection: "column",
-            gap: "0.4rem",
+            gap: "0.7rem",
           }}
         >
-          <p
-            style={{
-              fontSize: "0.78rem",
-              letterSpacing: "0.16em",
-              textTransform: "uppercase",
-              color: "#0f766e",
-              fontWeight: 600,
-            }}
-          >
-            Your saved choices
-          </p>
-          <h1
-            style={{
-              fontSize: "1.8rem",
-              fontWeight: 800,
-              color: "#020617",
-            }}
-          >
-            Shortlisted universities
-          </h1>
-          <p
-            style={{ color: "#64748b", fontSize: "0.95rem", maxWidth: "40rem" }}
-          >
-            Use this list to discuss options with parents, teachers or friends.
-            You can open details, compare up to 3 universities, or clear your
-            shortlist and start again.
-          </p>
+          <div>
+            <p
+              style={{
+                fontSize: "0.78rem",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "#0f766e",
+                fontWeight: 600,
+              }}
+            >
+              Your saved choices
+            </p>
+            <h1
+              style={{
+                fontSize: "1.8rem",
+                fontWeight: 800,
+                color: "#020617",
+              }}
+            >
+              Shortlisted universities
+            </h1>
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "0.95rem",
+                maxWidth: "40rem",
+              }}
+            >
+              Use this list to discuss options with parents, teachers or
+              friends. You can open details, compare up to 3 universities, or
+              clear your shortlist and start again.
+            </p>
+          </div>
 
           {/* top actions */}
           <div
             style={{
-              marginTop: "0.6rem",
+              marginTop: "0.4rem",
               display: "flex",
+              flexDirection: isMobile ? "column" : "row",
               flexWrap: "wrap",
               gap: "0.6rem",
             }}
@@ -125,6 +145,8 @@ export default function Shortlist() {
                 backgroundColor: "white",
                 fontSize: "0.85rem",
                 cursor: "pointer",
+                width: isMobile ? "100%" : "auto",
+                boxSizing: "border-box",
               }}
             >
               ← Back to Explore
@@ -142,6 +164,8 @@ export default function Shortlist() {
                 fontSize: "0.85rem",
                 fontWeight: 600,
                 cursor: "pointer",
+                width: isMobile ? "100%" : "auto",
+                boxSizing: "border-box",
               }}
             >
               Open compare
@@ -158,6 +182,8 @@ export default function Shortlist() {
                 fontSize: "0.85rem",
                 cursor: shortlist.length ? "pointer" : "not-allowed",
                 opacity: shortlist.length ? 1 : 0.6,
+                width: isMobile ? "100%" : "auto",
+                boxSizing: "border-box",
               }}
               disabled={shortlist.length === 0}
             >
@@ -171,66 +197,34 @@ export default function Shortlist() {
           <div
             style={{
               marginTop: "1.2rem",
-              padding: "1.6rem 1.8rem",
+              padding: "1.4rem 1.6rem",
               borderRadius: "1rem",
               backgroundColor: "#e5e7eb",
               border: "1px solid #cbd5f5",
-              display: "flex",
-              alignItems: "flex-start",
-              gap: "1rem",
+              color: "#475569",
+              fontSize: "0.95rem",
+              boxSizing: "border-box",
             }}
           >
-            <div
+            You haven&apos;t added any universities to your shortlist yet.
+            Browse the{" "}
+            <button
+              onClick={() => navigate("/universities")}
               style={{
-                fontSize: "2rem",
-                lineHeight: 1,
+                border: "none",
+                background: "none",
+                color: "#2563eb",
+                textDecoration: "underline",
+                cursor: "pointer",
+                padding: 0,
+                margin: 0,
+                fontSize: "0.95rem",
               }}
             >
-              ⭐
-            </div>
-            <div>
-              <h3
-                style={{
-                  margin: 0,
-                  marginBottom: "0.4rem",
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                  color: "#0f172a",
-                }}
-              >
-                Your shortlist is empty
-              </h3>
-              <p
-                style={{
-                  margin: 0,
-                  marginBottom: "0.8rem",
-                  fontSize: "0.92rem",
-                  color: "#475569",
-                  lineHeight: 1.5,
-                }}
-              >
-                Save universities you&apos;re interested in, and they&apos;ll
-                appear here so you can revisit or compare them later.
-              </p>
-              <button
-                type="button"
-                onClick={() => navigate("/universities")}
-                style={{
-                  padding: "0.45rem 1.1rem",
-                  borderRadius: "999px",
-                  border: "none",
-                  background:
-                    "linear-gradient(to right, #16a34a, #22c55e, #4ade80)",
-                  color: "white",
-                  fontWeight: 600,
-                  fontSize: "0.85rem",
-                  cursor: "pointer",
-                  boxShadow: "0 10px 24px rgba(22,163,74,0.55)",
-                }}
-              >
-                Start exploring
-              </button>
-            </div>
+              Explore
+            </button>{" "}
+            page and click &quot;Save to shortlist&quot; on universities you
+            like.
           </div>
         )}
 
@@ -258,14 +252,16 @@ export default function Shortlist() {
                   boxShadow: "0 10px 26px rgba(15,23,42,0.7)",
                   cursor: "pointer",
                   border: "1px solid rgba(148, 163, 184, 0.45)",
+                  boxSizing: "border-box",
                 }}
               >
                 <div
                   style={{
                     display: "flex",
+                    flexDirection: isMobile ? "column" : "row",
                     justifyContent: "space-between",
-                    alignItems: "flex-start",
-                    gap: "1rem",
+                    alignItems: isMobile ? "flex-start" : "flex-start",
+                    gap: "0.7rem",
                     marginBottom: "0.4rem",
                   }}
                 >
@@ -315,6 +311,7 @@ export default function Shortlist() {
                       fontSize: "0.78rem",
                       padding: "0.25rem 0.7rem",
                       cursor: "pointer",
+                      alignSelf: isMobile ? "flex-start" : "center",
                     }}
                   >
                     Remove
@@ -360,8 +357,9 @@ export default function Shortlist() {
                   style={{
                     marginTop: "0.7rem",
                     display: "flex",
+                    flexDirection: isMobile ? "column" : "row",
                     gap: "0.7rem",
-                    alignItems: "center",
+                    alignItems: isMobile ? "flex-start" : "center",
                     flexWrap: "wrap",
                   }}
                 >

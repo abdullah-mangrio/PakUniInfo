@@ -1,43 +1,62 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function Home() {
   const navigate = useNavigate();
+
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <div
       style={{
         minHeight: "calc(100vh - 72px)",
         display: "flex",
-        alignItems: "center",
+        alignItems: isMobile ? "flex-start" : "center",
       }}
     >
       <div
         style={{
           width: "100%",
+          maxWidth: "1120px",
+          margin: "0 auto",
+          padding: isMobile ? "1.8rem 1.2rem 2.4rem" : "2.6rem 2.2rem 3rem",
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1.7fr) minmax(0, 1.1fr)",
-          gap: "2rem",
-          alignItems: "center",
+          gridTemplateColumns: isMobile
+            ? "minmax(0, 1fr)"
+            : "minmax(0, 1.6fr) minmax(0, 1.2fr)",
+          gap: isMobile ? "1.75rem" : "2.25rem",
+          alignItems: "stretch",
+          boxSizing: "border-box",
         }}
       >
-        {/* Left: hero text */}
+        {/* LEFT SIDE – HERO COPY */}
         <section>
           <p
             style={{
-              fontSize: "0.85rem",
-              fontWeight: 600,
+              fontSize: "0.83rem",
               letterSpacing: "0.16em",
               textTransform: "uppercase",
-              color: "#10b981",
-              marginBottom: "0.5rem",
+              color: "#0f766e",
+              fontWeight: 600,
+              marginBottom: "0.55rem",
             }}
           >
-            Built for students in Pakistan
+            Pakistan universities · at a glance
           </p>
 
           <h1
             style={{
-              fontSize: "2.4rem",
+              fontSize: isMobile ? "2rem" : "2.4rem",
               lineHeight: 1.1,
               fontWeight: 800,
               color: "#020617",
@@ -63,20 +82,6 @@ export default function Home() {
             confidence.
           </p>
 
-          <p
-            style={{
-              fontSize: "0.8rem",
-              color: "#94a3b8",
-              marginBottom: "1.6rem",
-            }}
-          >
-            Built as a student project by{" "}
-            <span style={{ fontWeight: 600, color: "#059669" }}>
-              Abdullah Mangrio
-            </span>
-            , for students across Pakistan.
-          </p>
-
           {/* CTA BUTTONS */}
           <div
             style={{
@@ -89,25 +94,25 @@ export default function Home() {
             <button
               onClick={() => navigate("/universities")}
               style={{
-                padding: "0.75rem 1.6rem",
+                padding: "0.8rem 1.7rem",
                 borderRadius: "999px",
                 border: "none",
                 background:
-                  "linear-gradient(to right, #16a34a, #22c55e, #4ade80)",
+                  "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
                 color: "white",
                 fontWeight: 600,
                 fontSize: "0.95rem",
                 cursor: "pointer",
-                boxShadow: "0 18px 40px rgba(22,163,74,0.55)",
+                boxShadow: "0 16px 40px rgba(16,185,129,0.65)",
               }}
             >
               Explore universities
             </button>
 
             <button
-              onClick={() => navigate("/compare")}
+              onClick={() => navigate("/guidance")}
               style={{
-                padding: "0.75rem 1.4rem",
+                padding: "0.75rem 1.5rem",
                 borderRadius: "999px",
                 border: "1px solid #cbd5f5",
                 backgroundColor: "white",
@@ -117,95 +122,94 @@ export default function Home() {
                 cursor: "pointer",
               }}
             >
-              Compare options
+              How PakUniInfo helps
             </button>
           </div>
 
-          {/* Small text */}
-          <p
+          {/* LITTLE TAGS */}
+          <div
             style={{
-              fontSize: "0.8rem",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "1.1rem",
+              fontSize: "0.85rem",
               color: "#64748b",
-              maxWidth: "32rem",
             }}
           >
-            Start simple: filter by city or province, shortlist a few
-            universities, and then compare details like programs offered and
-            overall feel. Use this as a starting point alongside official
-            university websites and counsellors.
-          </p>
+            <span>🎓 For FSC, ICS &amp; A-level students</span>
+            <span>👨‍👩‍👧 Built for parents &amp; teachers too</span>
+          </div>
         </section>
 
-        {/* Right: highlight card */}
+        {/* RIGHT SIDE – WHY USE BOX */}
         <aside
           style={{
-            borderRadius: "1.25rem",
-            padding: "1.25rem 1.4rem",
+            borderRadius: "1.1rem",
+            padding: isMobile ? "1.3rem 1.4rem" : "1.5rem 1.75rem",
             background:
-              "radial-gradient(circle at top left, #22c55e, #0f172a 60%, #020617)",
+              "radial-gradient(circle at 0% 0%, #e0f2fe 0, #1f2937 42%, #020617 100%)",
             color: "white",
-            boxShadow: "0 20px 45px rgba(15,23,42,0.85)",
+            boxShadow: "0 26px 60px rgba(15,23,42,0.9)",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            marginTop: isMobile ? "0.3rem" : 0,
+            boxSizing: "border-box",
           }}
         >
-          <p
+          <h2
             style={{
-              fontSize: "0.8rem",
-              textTransform: "uppercase",
-              letterSpacing: "0.12em",
-              margin: 0,
-              marginBottom: "0.6rem",
-              color: "#bbf7d0",
-              fontWeight: 600,
+              fontSize: "1.1rem",
+              fontWeight: 700,
+              marginBottom: "0.75rem",
             }}
           >
-            What can you do here?
-          </p>
+            Why use PakUniInfo?
+          </h2>
 
           <ul
             style={{
+              listStyle: "none",
+              padding: 0,
               margin: 0,
-              paddingLeft: "1.1rem",
               fontSize: "0.9rem",
               lineHeight: 1.7,
             }}
           >
-            <li>
-              <strong>Browse universities</strong> by city, province and
-              programs.
+            <li style={{ marginBottom: "0.5rem" }}>
+              ✅ <strong>Explore</strong> universities by city, province,
+              program &amp; ranking.
+            </li>
+            <li style={{ marginBottom: "0.5rem" }}>
+              ⭐ <strong>Shortlist</strong> your favourite options to discuss
+              with family.
+            </li>
+            <li style={{ marginBottom: "0.5rem" }}>
+              📊 <strong>Compare</strong> up to 3 universities side-by-side.
             </li>
             <li>
-              <strong>See details</strong> like description, basic fees and
-              admission notes (where available).
-            </li>
-            <li>
-              <strong>Shortlist</strong> interesting options and review them
-              later.
-            </li>
-            <li>
-              <strong>Compare universities</strong> side-by-side to understand
-              differences.
+              🧭 <strong>Guidance</strong> page with simple tips for students,
+              parents &amp; teachers.
             </li>
           </ul>
 
-          <hr
+          <div
             style={{
-              border: "none",
-              borderTop: "1px solid rgba(226,232,240,0.2)",
-              margin: "0.9rem 0",
-            }}
-          />
-
-          <p
-            style={{
-              fontSize: "0.8rem",
-              margin: 0,
-              color: "#e5e7eb",
+              marginTop: "1.1rem",
+              padding: "0.65rem 0.8rem",
+              borderRadius: "0.9rem",
+              backgroundColor: "rgba(15,23,42,0.8)",
+              border: "1px solid rgba(148,163,184,0.6)",
+              fontSize: "0.82rem",
+              lineHeight: 1.6,
             }}
           >
-            This isn&apos;t an official ranking or admissions portal — it&apos;s
-            a helper tool to explore options. Always confirm final details with
-            the university&apos;s official website.
-          </p>
+            <p style={{ margin: 0 }}>
+              Built as a student portfolio project using the MERN stack
+              (MongoDB, Express, React, Node.js) — designed around how Pakistani
+              students and parents actually search for universities.
+            </p>
+          </div>
 
           <p
             style={{

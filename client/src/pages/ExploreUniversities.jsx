@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import LoadingSpinner from "../components/LoadingSpinner";
+import ErrorMessage from "../components/ErrorMessage";
 import {
   addToShortlist,
   removeFromShortlist,
@@ -11,15 +13,41 @@ import {
   isInCompareList,
   getCompareList,
 } from "../utils/compare";
-import LoadingSpinner from "../components/LoadingSpinner";
-import ErrorMessage from "../components/ErrorMessage";
 
 const PAGE_SIZE = 10;
 
-// Simple static options for now – later you can fetch from backend.
-const PROVINCES = ["Punjab", "Sindh", "KPK", "Balochistan", "Islamabad"];
-const CITIES = ["Karachi", "Lahore", "Islamabad", "Peshawar", "Quetta"];
-const PROGRAMS = ["BSCS", "BSEE", "BSIT", "BBA", "MBBS"];
+// Some example filter options – you can adjust or extend
+const PROVINCES = [
+  "Punjab",
+  "Sindh",
+  "Khyber Pakhtunkhwa",
+  "Balochistan",
+  "Islamabad Capital Territory",
+];
+
+const CITIES = [
+  "Lahore",
+  "Karachi",
+  "Islamabad",
+  "Rawalpindi",
+  "Peshawar",
+  "Quetta",
+  "Faisalabad",
+  "Multan",
+];
+
+const PROGRAMS = [
+  "BSCS",
+  "BSSE",
+  "BSIT",
+  "BBA",
+  "MBBS",
+  "BDS",
+  "PharmD",
+  "LLB",
+  "BS Psychology",
+  "BS Economics",
+];
 
 export default function ExploreUniversities() {
   const navigate = useNavigate();
@@ -28,498 +56,427 @@ export default function ExploreUniversities() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // filters
-  const [searchName, setSearchName] = useState("");
-  const [city, setCity] = useState("");
-  const [province, setProvince] = useState("");
-  const [program, setProgram] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
-  // sort
+  // Filters
+  const [searchName, setSearchName] = useState("");
+  const [province, setProvince] = useState("");
+  const [city, setCity] = useState("");
+  const [program, setProgram] = useState("");
   const [sort, setSort] = useState("ranking-desc");
 
-  // pagination
-  const [page, setPage] = useState(1);
-  const [totalResults, setTotalResults] = useState(0);
+  // Responsive breakpoint
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
 
-  // shortlist/compare triggers (for localStorage)
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setIsMobile(true);
+      } else {
+        setIsMobile(false);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // re-render when shortlist / compare changes
   const [shortlistTick, setShortlistTick] = useState(0);
   const [compareTick, setCompareTick] = useState(0);
 
-  const fetchUniversities = async () => {
-    try {
-      setLoading(true);
-      setError("");
+  // Build query string based on filters
+  const buildQuery = () => {
+    const params = new URLSearchParams();
 
-      const params = new URLSearchParams();
+    params.set("page", page.toString());
+    params.set("limit", PAGE_SIZE.toString());
 
-      // Filters
-      if (searchName.trim()) params.set("search", searchName.trim());
-      if (city) params.set("city", city);
-      if (province) params.set("province", province);
-      if (program) params.set("program", program);
+    if (searchName) params.set("search", searchName);
+    if (province) params.set("province", province);
+    if (city) params.set("location", city);
+    if (program) params.set("program", program);
 
-      // Sorting
-      if (sort === "ranking-desc") {
-        params.set("sortBy", "ranking");
-        params.set("sortOrder", "desc");
-      } else if (sort === "ranking-asc") {
-        params.set("sortBy", "ranking");
-        params.set("sortOrder", "asc");
-      } else if (sort === "name-asc") {
-        params.set("sortBy", "name");
-        params.set("sortOrder", "asc");
-      } else if (sort === "name-desc") {
-        params.set("sortBy", "name");
-        params.set("sortOrder", "desc");
-      }
-
-      // Pagination
-      params.set("page", String(page));
-      params.set("limit", String(PAGE_SIZE));
-
-      const res = await fetch(
-        `http://localhost:5000/api/universities?${params.toString()}`
-      );
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch universities.");
-      }
-
-      const data = await res.json();
-      setUniversities(data.results || []);
-      setTotalResults(data.total || 0);
-    } catch (err) {
-      console.error(err);
-      setError(
-        "We couldn’t load universities right now. Please try again in a moment."
-      );
-    } finally {
-      setLoading(false);
+    if (sort) {
+      const [sortBy, sortOrder] = sort.split("-");
+      params.set("sortBy", sortBy);
+      params.set("sortOrder", sortOrder);
     }
+
+    return params.toString();
   };
 
   useEffect(() => {
+    const fetchUniversities = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const queryString = buildQuery();
+
+        const res = await fetch(
+          `http://localhost:5000/api/universities?${queryString}`
+        );
+
+        if (!res.ok) {
+          throw new Error(`Request failed with status ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        setUniversities(data.results || []);
+        setTotalPages(data.totalPages || 1);
+      } catch (err) {
+        console.error("Error fetching universities:", err);
+        setError(err.message || "Failed to fetch");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchUniversities();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchName, city, province, program, sort, page]);
+  }, [page, searchName, province, city, program, sort]);
 
-  const totalPages = Math.ceil(totalResults / PAGE_SIZE) || 1;
-
-  const handlePrevPage = () => {
+  const handlePrev = () => {
     setPage((p) => Math.max(1, p - 1));
   };
 
-  const handleNextPage = () => {
+  const handleNext = () => {
     setPage((p) => Math.min(totalPages, p + 1));
-  };
-
-  const handleFilterChangeWrapper = (setter) => (value) => {
-    setter(value);
-    setPage(1);
   };
 
   const handleClearFilters = () => {
     setSearchName("");
-    setCity("");
     setProvince("");
+    setCity("");
     setProgram("");
     setSort("ranking-desc");
     setPage(1);
   };
 
-  const handleToggleShortlist = (uni) => {
-    if (isInShortlist(uni._id)) {
-      removeFromShortlist(uni._id);
-    } else {
-      addToShortlist(uni);
-    }
-    setShortlistTick((x) => x + 1);
+  // Reset to page 1 when filters change (except page itself)
+  const handleFilterChangeWrapper = (setter) => (value) => {
+    setter(value);
+    setPage(1);
   };
 
-  const handleToggleCompare = (uni) => {
-    if (isInCompareList(uni._id)) {
-      removeFromCompare(uni._id);
+  const handleToggleShortlist = (university, event) => {
+    event.stopPropagation();
+
+    if (isInShortlist(university._id)) {
+      removeFromShortlist(university._id);
     } else {
-      const currentCompare = getCompareList();
-      if (currentCompare.length >= 3) {
-        alert("You can only compare up to 3 universities at once.");
-        return;
-      }
-      addToCompare(uni);
+      addToShortlist({
+        _id: university._id,
+        name: university.name,
+        location: university.location,
+        city: university.city,
+        province: university.province,
+        ranking: university.ranking,
+        programs: university.programs,
+        website: university.website,
+      });
     }
-    setCompareTick((x) => x + 1);
+
+    setShortlistTick((v) => v + 1); // trigger re-render
   };
 
-  const compareCount = getCompareList().length;
+  const handleToggleCompare = (university, event) => {
+    event.stopPropagation();
 
-  // Styles reused by filter pills
+    if (isInCompareList(university._id)) {
+      removeFromCompare(university._id);
+      setCompareTick((v) => v + 1);
+      return;
+    }
+
+    const current = getCompareList();
+    if (current.length >= 3) {
+      alert("You can compare up to 3 universities at a time.");
+      return;
+    }
+
+    addToCompare(university);
+    setCompareTick((v) => v + 1);
+  };
+
+  // ---------- STYLES ----------
+  const outerCardStyle = {
+    borderRadius: "1.25rem",
+    background:
+      "radial-gradient(circle at top left, #ffffff 0%, #f1f5f9 60%, #e2e8f0 100%)",
+    padding: isMobile ? "1.6rem 1.4rem" : "2.4rem 2.6rem",
+    boxShadow: "0 26px 70px rgba(15,23,42,0.7)",
+    boxSizing: "border-box",
+  };
+
   const pillContainerStyle = {
+    padding: "0.35rem 0.75rem",
+    borderRadius: "999px",
+    backgroundColor: "white",
+    border: "1px solid #cbd5f5",
     display: "flex",
-    flexDirection: "column",
-    gap: "0.25rem",
-    minWidth: "180px",
+    alignItems: isMobile ? "flex-start" : "center",
+    gap: "0.4rem",
+    flexDirection: isMobile ? "column" : "row",
+    width: isMobile ? "100%" : "auto",
+    boxSizing: "border-box", // ✅ prevent overflow
   };
 
   const pillLabelStyle = {
-    fontSize: "0.78rem",
+    fontSize: "0.8rem",
     color: "#64748b",
-    fontWeight: 500,
   };
 
   const pillSelectStyle = {
-    padding: "0.45rem 0.7rem",
-    borderRadius: "999px",
-    border: "1px solid #cbd5f5",
-    fontSize: "0.85rem",
-    backgroundColor: "white",
-    cursor: "pointer",
-  };
-
-  const pillInputStyle = {
-    padding: "0.45rem 0.7rem",
-    borderRadius: "999px",
-    border: "1px solid #cbd5f5",
-    fontSize: "0.85rem",
-    backgroundColor: "white",
+    border: "none",
+    outline: "none",
+    background: "transparent",
+    fontSize: "0.9rem",
+    width: isMobile ? "100%" : "auto",
+    boxSizing: "border-box",
   };
 
   return (
-    <div style={{ display: "grid", gap: "1.5rem" }}>
-      {/* HEADER SECTION */}
-      <section style={{ display: "grid", gap: "0.6rem" }}>
-        <header
+    <div>
+      <div style={outerCardStyle}>
+        {/* HEADER */}
+        <header style={{ marginBottom: "1.6rem" }}>
+          <p
+            style={{
+              fontSize: "0.78rem",
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: "#0f766e",
+              fontWeight: 600,
+              marginBottom: "0.35rem",
+            }}
+          >
+            Browse the PakUniInfo database
+          </p>
+          <h1
+            style={{
+              fontSize: "1.8rem",
+              fontWeight: 800,
+              color: "#020617",
+              letterSpacing: "-0.03em",
+              marginBottom: "0.35rem",
+            }}
+          >
+            Explore universities in Pakistan
+          </h1>
+          <p
+            style={{
+              color: "#64748b",
+              fontSize: "0.95rem",
+              maxWidth: "40rem",
+            }}
+          >
+            Filter by city, province or program, then compare and shortlist
+            universities that match your goals.
+          </p>
+        </header>
+
+        {/* SEARCH INPUT */}
+        <div style={{ marginBottom: "1.2rem" }}>
+          <label
+            htmlFor="search-name"
+            style={{
+              display: "block",
+              marginBottom: "0.35rem",
+              fontSize: "0.85rem",
+              fontWeight: 500,
+              color: "#0f172a",
+            }}
+          >
+            Search by name
+          </label>
+          <div
+            style={{
+              borderRadius: "0.9rem",
+              backgroundColor: "white",
+              border: "1px solid #cbd5f5",
+              padding: "0.2rem 0.25rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.4rem",
+              boxSizing: "border-box",
+            }}
+          >
+            <span style={{ paddingLeft: "0.6rem" }}>🔍</span>
+            <input
+              id="search-name"
+              type="text"
+              placeholder="Search by university name..."
+              value={searchName}
+              onChange={(e) =>
+                handleFilterChangeWrapper(setSearchName)(e.target.value)
+              }
+              style={{
+                width: "100%",
+                padding: "0.8rem 1rem",
+                borderRadius: "0.75rem",
+                border: "none",
+                fontSize: "0.95rem",
+                boxSizing: "border-box",
+                backgroundColor: "white",
+                outline: "none",
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Filter pills row */}
+        <div
           style={{
             display: "flex",
-            justifyContent: "space-between",
-            gap: "1rem",
-            alignItems: "flex-start",
             flexWrap: "wrap",
+            gap: isMobile ? "0.5rem" : "0.75rem",
+            alignItems: isMobile ? "stretch" : "center",
+            flexDirection: isMobile ? "column" : "row",
           }}
         >
-          <div style={{ display: "grid", gap: "0.3rem" }}>
-            <h1
-              style={{
-                fontSize: "1.6rem",
-                fontWeight: 700,
-                letterSpacing: "-0.03em",
-                color: "#0f172a",
-              }}
+          {/* Province */}
+          <div style={pillContainerStyle}>
+            <span style={pillLabelStyle}>Province</span>
+            <select
+              value={province}
+              onChange={(e) =>
+                handleFilterChangeWrapper(setProvince)(e.target.value)
+              }
+              style={pillSelectStyle}
             >
-              Explore universities in Pakistan
-            </h1>
-            <p
-              style={{
-                margin: 0,
-                fontSize: "0.95rem",
-                color: "#64748b",
-                maxWidth: "40rem",
-              }}
-            >
-              Filter by city, province and programs.{" "}
-              <span style={{ fontWeight: 500 }}>
-                Click on a card to see full details, admission info and fee
-                breakdown.
-              </span>
-            </p>
+              <option value="">All provinces</option>
+              {PROVINCES.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Compare count pill */}
+          {/* City */}
+          <div style={pillContainerStyle}>
+            <span style={pillLabelStyle}>City</span>
+            <select
+              value={city}
+              onChange={(e) =>
+                handleFilterChangeWrapper(setCity)(e.target.value)
+              }
+              style={pillSelectStyle}
+            >
+              <option value="">All</option>
+              {CITIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Program */}
+          <div style={pillContainerStyle}>
+            <span style={pillLabelStyle}>Program</span>
+            <select
+              value={program}
+              onChange={(e) =>
+                handleFilterChangeWrapper(setProgram)(e.target.value)
+              }
+              style={pillSelectStyle}
+            >
+              <option value="">All</option>
+              {PROGRAMS.map((prog) => (
+                <option key={prog} value={prog}>
+                  {prog}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sort */}
+          <div style={pillContainerStyle}>
+            <span style={pillLabelStyle}>Sort by</span>
+            <select
+              value={sort}
+              onChange={(e) =>
+                handleFilterChangeWrapper(setSort)(e.target.value)
+              }
+              style={pillSelectStyle}
+            >
+              <option value="ranking-desc">Ranking: High → Low</option>
+              <option value="ranking-asc">Ranking: Low → High</option>
+              <option value="name-asc">Name: A → Z</option>
+              <option value="name-desc">Name: Z → A</option>
+            </select>
+          </div>
+
+          {/* Clear filters */}
+          <button
+            onClick={handleClearFilters}
+            style={{
+              padding: "0.4rem 0.9rem",
+              borderRadius: "999px",
+              border: "1px solid #cbd5f5",
+              backgroundColor: "white",
+              fontSize: "0.85rem",
+              cursor: "pointer",
+              width: isMobile ? "100%" : "auto",
+              textAlign: "center",
+              boxSizing: "border-box", // ✅ no overflow
+            }}
+          >
+            Clear filters
+          </button>
+
+          {/* Open Compare */}
           <button
             onClick={() => navigate("/compare")}
             style={{
-              alignSelf: "flex-start",
-              padding: "0.4rem 0.9rem",
+              padding: "0.45rem 1rem",
               borderRadius: "999px",
               border: "none",
               background:
-                compareCount > 0
-                  ? "linear-gradient(to right, #0f172a, #1e293b)"
-                  : "#e5e7eb",
-              color: compareCount > 0 ? "white" : "#4b5563",
-              fontSize: "0.8rem",
-              fontWeight: 500,
+                "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
+              color: "white",
+              fontSize: "0.85rem",
+              fontWeight: 600,
               cursor: "pointer",
-              display: "flex",
-              gap: "0.4rem",
-              alignItems: "center",
-              boxShadow:
-                compareCount > 0
-                  ? "0 10px 24px rgba(15,23,42,0.55)"
-                  : "none",
+              boxShadow: "0 10px 24px rgba(16, 185, 129, 0.55)",
+              width: isMobile ? "100%" : "auto",
+              textAlign: "center",
+              boxSizing: "border-box", // ✅ no overflow
             }}
           >
-            <span>Compare list</span>
-            <span
-              style={{
-                minWidth: "1.4rem",
-                height: "1.4rem",
-                borderRadius: "999px",
-                backgroundColor: compareCount > 0 ? "#22c55e" : "#d1d5db",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: "0.8rem",
-                fontWeight: 600,
-                color: "white",
-              }}
-            >
-              {compareCount}
-            </span>
+            Open compare view
           </button>
-        </header>
-
-        {/* FILTERS SECTION */}
-        <section
-          style={{
-            padding: "0.9rem 1rem",
-            borderRadius: "0.9rem",
-            border: "1px solid #e2e8f0",
-            backgroundColor: "#f8fafc",
-            display: "grid",
-            gap: "0.75rem",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              gap: "0.75rem",
-              alignItems: "center",
-              flexWrap: "wrap",
-            }}
-          >
-            <div style={{ fontSize: "0.85rem", color: "#64748b" }}>
-              <strong>Tip:</strong> Start with a broad search, then narrow down
-              by city and programs.
-            </div>
-
-            {totalResults > 0 && (
-              <div
-                style={{
-                  fontSize: "0.8rem",
-                  color: "#4b5563",
-                  padding: "0.25rem 0.75rem",
-                  borderRadius: "999px",
-                  backgroundColor: "white",
-                  border: "1px solid #e5e7eb",
-                }}
-              >
-                Showing {universities.length} of {totalResults} results
-              </div>
-            )}
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: "0.75rem",
-              alignItems: "center",
-            }}
-          >
-            {/* Name search */}
-            <div style={{ ...pillContainerStyle, flex: 1, minWidth: "220px" }}>
-              <span style={pillLabelStyle}>Search by name</span>
-              <input
-                type="text"
-                value={searchName}
-                placeholder="e.g. LUMS, NUST, UET"
-                onChange={(e) =>
-                  handleFilterChangeWrapper(setSearchName)(e.target.value)
-                }
-                style={pillInputStyle}
-              />
-            </div>
-
-            {/* City */}
-            <div style={pillContainerStyle}>
-              <span style={pillLabelStyle}>City</span>
-              <select
-                value={city}
-                onChange={(e) =>
-                  handleFilterChangeWrapper(setCity)(e.target.value)
-                }
-                style={pillSelectStyle}
-              >
-                <option value="">All cities</option>
-                {CITIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Province */}
-            <div style={pillContainerStyle}>
-              <span style={pillLabelStyle}>Province</span>
-              <select
-                value={province}
-                onChange={(e) =>
-                  handleFilterChangeWrapper(setProvince)(e.target.value)
-                }
-                style={pillSelectStyle}
-              >
-                <option value="">All provinces</option>
-                {PROVINCES.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Program */}
-            <div style={pillContainerStyle}>
-              <span style={pillLabelStyle}>Program</span>
-              <select
-                value={program}
-                onChange={(e) =>
-                  handleFilterChangeWrapper(setProgram)(e.target.value)
-                }
-                style={pillSelectStyle}
-              >
-                <option value="">Any program</option>
-                {PROGRAMS.map((prog) => (
-                  <option key={prog} value={prog}>
-                    {prog}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Sort */}
-            <div style={pillContainerStyle}>
-              <span style={pillLabelStyle}>Sort</span>
-              <select
-                value={sort}
-                onChange={(e) =>
-                  handleFilterChangeWrapper(setSort)(e.target.value)
-                }
-                style={pillSelectStyle}
-              >
-                <option value="ranking-desc">Ranking: High → Low</option>
-                <option value="ranking-asc">Ranking: Low → High</option>
-                <option value="name-asc">Name: A → Z</option>
-                <option value="name-desc">Name: Z → A</option>
-              </select>
-            </div>
-
-            {/* Clear filters */}
-            <button
-              onClick={handleClearFilters}
-              style={{
-                padding: "0.4rem 0.9rem",
-                borderRadius: "999px",
-                border: "1px solid #cbd5f5",
-                backgroundColor: "white",
-                fontSize: "0.85rem",
-                cursor: "pointer",
-              }}
-            >
-              Clear filters
-            </button>
-
-            {/* Open Compare */}
-            <button
-              onClick={() => navigate("/compare")}
-              style={{
-                padding: "0.45rem 1rem",
-                borderRadius: "999px",
-                border: "none",
-                background:
-                  "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
-                color: "white",
-                fontSize: "0.85rem",
-                fontWeight: 600,
-                cursor: "pointer",
-                marginLeft: "auto",
-              }}
-            >
-              Open compare
-            </button>
-          </div>
-        </section>
-      </section>
-
-      {/* STATUS: LOADING / ERROR / EMPTY */}
-      {loading && <LoadingSpinner />}
-
-      {!loading && error && (
-        <ErrorMessage message={error} onRetry={fetchUniversities} />
-      )}
-
-      {!loading && !error && universities.length === 0 && (
-        <div
-          style={{
-            marginTop: "1.2rem",
-            padding: "1.6rem 1.8rem",
-            borderRadius: "1rem",
-            backgroundColor: "#e5e7eb",
-            border: "1px solid #cbd5f5",
-            display: "flex",
-            alignItems: "flex-start",
-            gap: "1rem",
-          }}
-        >
-          <div
-            style={{
-              fontSize: "2rem",
-              lineHeight: 1,
-            }}
-          >
-            🔍
-          </div>
-          <div>
-            <h3
-              style={{
-                margin: 0,
-                marginBottom: "0.4rem",
-                fontSize: "1rem",
-                fontWeight: 600,
-                color: "#0f172a",
-              }}
-            >
-              No universities match these filters
-            </h3>
-            <p
-              style={{
-                margin: 0,
-                marginBottom: "0.8rem",
-                fontSize: "0.92rem",
-                color: "#475569",
-                lineHeight: 1.5,
-              }}
-            >
-              We couldn&apos;t find any universities with the current search and
-              filters. Try clearing some filters, removing the search text, or
-              choosing a different city / province.
-            </p>
-            <button
-              type="button"
-              onClick={handleClearFilters}
-              style={{
-                padding: "0.45rem 1.1rem",
-                borderRadius: "999px",
-                border: "none",
-                background:
-                  "linear-gradient(to right, #16a34a, #22c55e, #4ade80)",
-                color: "white",
-                fontWeight: 600,
-                fontSize: "0.85rem",
-                cursor: "pointer",
-                boxShadow: "0 10px 24px rgba(22,163,74,0.55)",
-              }}
-            >
-              Clear all filters
-            </button>
-          </div>
         </div>
-      )}
 
-      {/* LIST OF UNIVERSITIES */}
-      {!loading && !error && universities.length > 0 && (
-        <>
+        {/* STATUS MESSAGES */}
+        {loading && (
+          <div style={{ marginTop: "1.2rem" }}>
+            <LoadingSpinner label="Loading universities..." />
+          </div>
+        )}
+
+        {!loading && error && (
+          <div style={{ marginTop: "1.2rem" }}>
+            <ErrorMessage message="We couldn’t load universities right now. Please try again in a moment." />
+          </div>
+        )}
+
+        {!loading && !error && universities.length === 0 && (
+          <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
+            No universities found with these filters. Try clearing filters or
+            searching with a different name.
+          </p>
+        )}
+
+        {/* LIST OF UNIVERSITIES */}
+        {!loading && !error && universities.length > 0 && (
           <div
             style={{
               display: "flex",
@@ -549,237 +506,182 @@ export default function ExploreUniversities() {
                   <h2
                     style={{
                       margin: 0,
-                      marginBottom: "0.2rem",
-                      fontSize: "1.15rem",
-                      fontWeight: 600,
+                      marginBottom: "0.35rem",
+                      fontSize: "1.1rem",
+                      fontWeight: 700,
                     }}
                   >
-                    {uni.name}
+                    {uni.name || "Unnamed University"}
                   </h2>
 
-                  <div
+                  <p
                     style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      gap: "0.5rem",
-                      alignItems: "center",
-                      marginBottom: "0.4rem",
-                      fontSize: "0.85rem",
+                      margin: 0,
+                      fontSize: "0.9rem",
+                      color: "#cbd5f5",
                     }}
                   >
-                    {(uni.city || uni.location) && (
-                      <span
-                        style={{
-                          padding: "0.25rem 0.65rem",
-                          borderRadius: "999px",
-                          backgroundColor: "rgba(15,23,42,0.8)",
-                          border: "1px solid rgba(148,163,184,0.75)",
-                        }}
-                      >
-                        📍{" "}
-                        {uni.city
-                          ? `${uni.city}${
-                              uni.province ? `, ${uni.province}` : ""
-                            }`
-                          : uni.location}
-                      </span>
-                    )}
+                    Location:{" "}
+                    <span style={{ color: "#e5e7eb" }}>
+                      {uni.location || uni.city || "Not specified"}
+                      {uni.province ? `, ${uni.province}` : ""}
+                    </span>
+                  </p>
 
-                    {typeof uni.ranking === "number" && (
-                      <span
-                        style={{
-                          padding: "0.25rem 0.65rem",
-                          borderRadius: "999px",
-                          backgroundColor: "rgba(22,163,74,0.15)",
-                          border: "1px solid rgba(34,197,94,0.75)",
-                        }}
-                      >
-                        🏆 Ranking: #{uni.ranking}
-                      </span>
-                    )}
-
-                    {Array.isArray(uni.programs) && uni.programs.length > 0 && (
-                      <span
-                        style={{
-                          padding: "0.25rem 0.65rem",
-                          borderRadius: "999px",
-                          backgroundColor: "rgba(15,23,42,0.8)",
-                          border: "1px solid rgba(148,163,184,0.75)",
-                        }}
-                      >
-                        🎓{" "}
-                        {uni.programs.slice(0, 2).join(" · ")}
-                        {uni.programs.length > 2
-                          ? ` +${uni.programs.length - 2} more`
-                          : ""}
-                      </span>
-                    )}
-                  </div>
-
-                  {uni.description && (
+                  {uni.ranking != null && (
                     <p
                       style={{
-                        margin: "0.3rem 0 0.7rem",
-                        fontSize: "0.9rem",
-                        color: "#e5e7eb",
-                        opacity: 0.9,
-                        maxWidth: "50rem",
+                        margin: "0.2rem 0 0",
+                        fontSize: "0.88rem",
+                        color: "#facc15",
                       }}
                     >
-                      {uni.description.length > 200
-                        ? `${uni.description.slice(0, 200)}…`
-                        : uni.description}
+                      Ranking:{" "}
+                      <span style={{ fontWeight: 600 }}>#{uni.ranking}</span>
                     </p>
                   )}
 
-                  <div
+                  {/* Programs */}
+                  <p
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: "0.75rem",
-                      marginTop: "0.3rem",
+                      margin: "0.35rem 0 0.2rem",
+                      fontSize: "0.88rem",
                     }}
                   >
+                    Programs:{" "}
+                    {Array.isArray(uni.programs) && uni.programs.length > 0 ? (
+                      <span>{uni.programs.join(", ")}</span>
+                    ) : (
+                      <span>Not listed</span>
+                    )}
+                  </p>
+
+                  {/* Actions */}
+                  <div
+                    style={{
+                      marginTop: "0.7rem",
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "0.6rem",
+                      alignItems: "center",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Shortlist button */}
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/universities/${uni._id}`);
-                      }}
+                      onClick={(e) => handleToggleShortlist(uni, e)}
                       style={{
-                        padding: "0.45rem 1rem",
+                        padding: "0.4rem 0.9rem",
                         borderRadius: "999px",
-                        border: "none",
-                        background:
-                          "linear-gradient(to right, #3b82f6, #6366f1)",
-                        color: "white",
-                        fontSize: "0.85rem",
-                        fontWeight: 500,
+                        border: "1px solid #facc15",
+                        backgroundColor: savedShortlist
+                          ? "#facc15"
+                          : "transparent",
+                        color: savedShortlist ? "#0f172a" : "#facc15",
+                        fontSize: "0.8rem",
                         cursor: "pointer",
-                        boxShadow: "0 8px 18px rgba(59,130,246,0.65)",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.3rem",
                       }}
                     >
-                      View details →
+                      <span>{savedShortlist ? "★" : "☆"}</span>
+                      <span>
+                        {savedShortlist
+                          ? "Saved to shortlist"
+                          : "Save to shortlist"}
+                      </span>
                     </button>
 
-                    <div
+                    {/* Compare button */}
+                    <button
+                      onClick={(e) => handleToggleCompare(uni, e)}
                       style={{
-                        display: "flex",
-                        gap: "0.45rem",
-                        alignItems: "center",
+                        padding: "0.4rem 0.9rem",
+                        borderRadius: "999px",
+                        border: "1px solid #93c5fd",
+                        backgroundColor: inCompare ? "#93c5fd" : "transparent",
+                        color: inCompare ? "#0f172a" : "#bfdbfe",
+                        fontSize: "0.8rem",
+                        cursor: "pointer",
                       }}
                     >
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleShortlist(uni);
-                        }}
-                        style={{
-                          padding: "0.35rem 0.9rem",
-                          borderRadius: "999px",
-                          border: "none",
-                          cursor: "pointer",
-                          fontSize: "0.8rem",
-                          fontWeight: 500,
-                          background: savedShortlist
-                            ? "linear-gradient(to right, #22c55e, #16a34a)"
-                            : "white",
-                          color: savedShortlist ? "white" : "#0f172a",
-                          boxShadow: savedShortlist
-                            ? "0 8px 18px rgba(34,197,94,0.75)"
-                            : "none",
-                        }}
-                      >
-                        {savedShortlist ? "Saved" : "Save to shortlist"}
-                      </button>
+                      {inCompare ? "In comparison" : "Add to compare"}
+                    </button>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleCompare(uni);
-                        }}
-                        style={{
-                          padding: "0.35rem 0.9rem",
-                          borderRadius: "999px",
-                          border: "1px solid rgba(148,163,184,0.8)",
-                          cursor: "pointer",
-                          fontSize: "0.8rem",
-                          fontWeight: 500,
-                          backgroundColor: inCompare
-                            ? "rgba(15,23,42,0.8)"
-                            : "transparent",
-                          color: "white",
-                        }}
-                      >
-                        {inCompare ? "In compare" : "Add to compare"}
-                      </button>
-                    </div>
+                    {/* View details hint */}
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "0.8rem",
+                        color: "#a5b4fc",
+                      }}
+                    >
+                      Click card to view full details →
+                    </p>
                   </div>
                 </article>
               );
             })}
-          </div>
 
-          {/* PAGINATION */}
-          {totalResults > PAGE_SIZE && (
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: "1rem",
-                marginTop: "1rem",
-              }}
-            >
+            {/* PAGINATION */}
+            {!loading && !error && universities.length > 0 && (
               <div
                 style={{
-                  fontSize: "0.85rem",
-                  color: "#64748b",
-                }}
-              >
-                Page {page} of {totalPages}
-              </div>
-
-              <div
-                style={{
+                  marginTop: "1.6rem",
                   display: "flex",
-                  gap: "0.5rem",
+                  flexDirection: isMobile ? "column" : "row",
+                  gap: isMobile ? "0.75rem" : 0,
+                  justifyContent: isMobile
+                    ? "flex-start"
+                    : "space-between",
+                  alignItems: isMobile ? "flex-start" : "center",
+                  fontSize: "0.9rem",
+                  color: "#475569",
                 }}
               >
-                <button
-                  onClick={handlePrevPage}
-                  disabled={page === 1}
-                  style={{
-                    padding: "0.4rem 0.9rem",
-                    borderRadius: "999px",
-                    border: "1px solid #cbd5f5",
-                    backgroundColor: page === 1 ? "#e5e7eb" : "white",
-                    fontSize: "0.85rem",
-                    cursor: page === 1 ? "not-allowed" : "pointer",
-                  }}
-                >
-                  ← Previous
-                </button>
-                <button
-                  onClick={handleNextPage}
-                  disabled={page === totalPages}
-                  style={{
-                    padding: "0.4rem 0.9rem",
-                    borderRadius: "999px",
-                    border: "1px solid #cbd5f5",
-                    backgroundColor:
-                      page === totalPages ? "#e5e7eb" : "white",
-                    fontSize: "0.85rem",
-                    cursor: page === totalPages ? "not-allowed" : "pointer",
-                  }}
-                >
-                  Next →
-                </button>
+                <div>
+                  Page{" "}
+                  <span style={{ fontWeight: 600 }}>
+                    {page} / {totalPages}
+                  </span>
+                </div>
+
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <button
+                    onClick={handlePrev}
+                    disabled={page === 1}
+                    style={{
+                      padding: "0.4rem 0.9rem",
+                      borderRadius: "999px",
+                      border: "1px solid #cbd5f5",
+                      backgroundColor: page === 1 ? "#e5e7eb" : "white",
+                      cursor: page === 1 ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    disabled={page === totalPages}
+                    style={{
+                      padding: "0.4rem 0.9rem",
+                      borderRadius: "999px",
+                      border: "1px solid #cbd5f5",
+                      backgroundColor:
+                        page === totalPages ? "#e5e7eb" : "white",
+                      cursor:
+                        page === totalPages ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-        </>
-      )}
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,5 +1,4 @@
-import React from "react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getShortlist } from "../utils/shortlist";
 import {
@@ -16,9 +15,21 @@ export default function Compare() {
   const [compareUnis, setCompareUnis] = useState([]);
   const [shortlist, setShortlist] = useState([]);
 
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+
   useEffect(() => {
     setCompareUnis(getCompareList());
     setShortlist(getShortlist());
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const handleRemoveFromCompare = (id) => {
@@ -31,14 +42,12 @@ export default function Compare() {
       "Clear all universities from comparison?"
     );
     if (!confirmClear) return;
-
     clearCompare();
     setCompareUnis([]);
   };
 
   const handleLoadFromShortlist = () => {
     if (!shortlist || shortlist.length === 0) return;
-
     const slice = shortlist.slice(0, 3);
     clearCompare();
     slice.forEach((uni) => addToCompare(uni));
@@ -74,6 +83,9 @@ export default function Compare() {
           borderBottom: "1px solid #e5e7eb",
           width: "180px",
           backgroundColor: "#f9fafb",
+          position: "sticky",
+          left: 0,
+          zIndex: 2,
         }}
       >
         {label}
@@ -113,7 +125,8 @@ export default function Compare() {
         <div
           style={{
             display: "flex",
-            alignItems: "center",
+            flexDirection: isMobile ? "column" : "row",
+            alignItems: isMobile ? "flex-start" : "center",
             gap: "0.75rem",
             flexWrap: "wrap",
           }}
@@ -153,9 +166,9 @@ export default function Compare() {
         <div
           style={{
             display: "flex",
+            flexDirection: isMobile ? "column" : "row",
             flexWrap: "wrap",
-            gap: "0.6rem",
-            alignItems: "baseline",
+            gap: "0.9rem",
             justifyContent: "space-between",
             marginTop: "0.5rem",
           }}
@@ -187,9 +200,9 @@ export default function Compare() {
           <div
             style={{
               display: "flex",
+              flexWrap: "wrap",
               gap: "0.5rem",
               alignItems: "center",
-              flexWrap: "wrap",
             }}
           >
             <button
@@ -222,7 +235,8 @@ export default function Compare() {
                   !shortlist || shortlist.length === 0
                     ? "not-allowed"
                     : "pointer",
-                opacity: !shortlist || shortlist.length === 0 ? 0.6 : 1,
+                opacity:
+                  !shortlist || shortlist.length === 0 ? 0.6 : 1,
                 boxShadow: "0 10px 24px rgba(16, 185, 129, 0.45)",
               }}
             >
@@ -254,97 +268,94 @@ export default function Compare() {
       {compareUnis.length === 0 && (
         <section
           style={{
-            marginTop: "0.4rem",
-            padding: "1.6rem 1.8rem",
+            padding: "1.75rem 1.5rem",
             borderRadius: "1rem",
-            backgroundColor: "#e5e7eb",
-            border: "1px solid #cbd5f5",
-            display: "flex",
-            alignItems: "flex-start",
-            gap: "1rem",
+            border: "1px dashed #cbd5f5",
+            backgroundColor: "#f8fafc",
+            display: "grid",
+            gap: "0.75rem",
           }}
         >
-          <div
-            style={{
-              fontSize: "2rem",
-              lineHeight: 1,
-            }}
-          >
-            📊
-          </div>
-          <div>
-            <h3
-              style={{
-                margin: 0,
-                marginBottom: "0.4rem",
-                fontSize: "1rem",
-                fontWeight: 600,
-                color: "#0f172a",
-              }}
-            >
-              No universities selected for comparison yet
-            </h3>
-            <p
-              style={{
-                margin: 0,
-                marginBottom: "0.8rem",
-                fontSize: "0.92rem",
-                color: "#475569",
-                lineHeight: 1.5,
-              }}
-            >
-              Start by adding universities to your comparison list. You can add
-              them directly from the Explore page or load them from your
-              shortlist.
-            </p>
-
+          <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
             <div
               style={{
+                width: "2.25rem",
+                height: "2.25rem",
+                borderRadius: "999px",
+                background:
+                  "radial-gradient(circle at 30% 20%, #4f46e5, #0f172a)",
                 display: "flex",
-                gap: "0.6rem",
-                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontSize: "1.1rem",
               }}
             >
-              <button
-                type="button"
-                onClick={goToExplore}
+              🔍
+            </div>
+            <div>
+              <h2
                 style={{
-                  padding: "0.5rem 1rem",
-                  borderRadius: "999px",
-                  border: "none",
-                  background:
-                    "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(37,99,235,0.95))",
-                  color: "white",
-                  fontSize: "0.85rem",
-                  fontWeight: 500,
-                  cursor: "pointer",
-                  boxShadow: "0 5px 14px rgba(15,23,42,0.55)",
-                }}
-              >
-                Go to Explore
-              </button>
-
-              <button
-                type="button"
-                onClick={handleLoadFromShortlist}
-                disabled={!shortlist || shortlist.length === 0}
-                style={{
-                  padding: "0.5rem 1rem",
-                  borderRadius: "999px",
-                  border: "1px solid #cbd5f5",
-                  backgroundColor: "white",
-                  fontSize: "0.85rem",
-                  cursor:
-                    !shortlist || shortlist.length === 0
-                      ? "not-allowed"
-                      : "pointer",
-                  opacity: !shortlist || shortlist.length === 0 ? 0.6 : 1,
+                  margin: 0,
+                  marginBottom: "0.15rem",
+                  fontSize: "1rem",
+                  fontWeight: 600,
                   color: "#0f172a",
                 }}
               >
-                Load from shortlist
-              </button>
+                No universities in comparison yet
+              </h2>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.9rem",
+                  color: "#64748b",
+                }}
+              >
+                Go back to Explore and add up to 3 universities to compare, or
+                quickly load from your shortlist.
+              </p>
             </div>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "0.6rem",
+              marginTop: "0.5rem",
+            }}
+          >
+            <button
+              onClick={goToExplore}
+              style={{
+                padding: "0.5rem 1rem",
+                borderRadius: "999px",
+                border: "none",
+                background:
+                  "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(37,99,235,0.95))",
+                color: "white",
+                fontSize: "0.85rem",
+                fontWeight: 500,
+                cursor: "pointer",
+                boxShadow: "0 5px 14px rgba(15,23,42,0.55)",
+              }}
+            >
+              Browse universities
+            </button>
+            <button
+              onClick={goToShortlist}
+              style={{
+                padding: "0.5rem 1rem",
+                borderRadius: "999px",
+                border: "1px solid #cbd5f5",
+                backgroundColor: "white",
+                fontSize: "0.85rem",
+                cursor: "pointer",
+              }}
+            >
+              View shortlist
+            </button>
           </div>
         </section>
       )}
@@ -368,9 +379,10 @@ export default function Compare() {
                 "linear-gradient(to right, #0f172a, #1e293b, #0f172a)",
               color: "white",
               display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
+              flexDirection: isMobile ? "column" : "row",
               gap: "0.75rem",
+              justifyContent: "space-between",
+              alignItems: isMobile ? "flex-start" : "center",
             }}
           >
             <div>
@@ -399,6 +411,9 @@ export default function Compare() {
                 display: "flex",
                 gap: "0.4rem",
                 alignItems: "center",
+                flexWrap: isMobile ? "nowrap" : "wrap",
+                overflowX: isMobile ? "auto" : "visible",
+                paddingBottom: isMobile ? "0.2rem" : 0,
               }}
             >
               {compareUnis.map((uni) => (
@@ -413,6 +428,7 @@ export default function Compare() {
                     display: "flex",
                     alignItems: "center",
                     gap: "0.35rem",
+                    flexShrink: 0,
                   }}
                 >
                   <span
@@ -465,7 +481,7 @@ export default function Compare() {
               style={{
                 width: "100%",
                 borderCollapse: "collapse",
-                minWidth: "600px",
+                minWidth: "650px",
               }}
             >
               <thead>
@@ -479,6 +495,9 @@ export default function Compare() {
                       color: "#0f172a",
                       backgroundColor: "#f9fafb",
                       borderBottom: "1px solid #e5e7eb",
+                      position: "sticky",
+                      left: 0,
+                      zIndex: 2,
                     }}
                   >
                     Attribute
@@ -526,7 +545,9 @@ export default function Compare() {
                           </div>
                         </div>
                         <button
-                          onClick={() => navigate(`/universities/${uni._id}`)}
+                          onClick={() =>
+                            navigate(`/universities/${uni._id}`)
+                          }
                           style={{
                             padding: "0.3rem 0.7rem",
                             borderRadius: "999px",
@@ -536,7 +557,8 @@ export default function Compare() {
                             background:
                               "linear-gradient(to right, #0ea5e9, #6366f1)",
                             color: "white",
-                            boxShadow: "0 6px 16px rgba(59,130,246,0.55)",
+                            boxShadow:
+                              "0 6px 16px rgba(59,130,246,0.55)",
                           }}
                         >
                           View
@@ -626,8 +648,9 @@ export default function Compare() {
         <div
           style={{
             display: "flex",
+            flexDirection: isMobile ? "column" : "row",
             gap: "0.6rem",
-            alignItems: "center",
+            alignItems: isMobile ? "flex-start" : "center",
             flexWrap: "wrap",
           }}
         >
@@ -715,8 +738,10 @@ export default function Compare() {
                   key={uni._id}
                   style={{
                     display: "flex",
+                    flexDirection: isMobile ? "column" : "row",
                     justifyContent: "space-between",
-                    alignItems: "center",
+                    alignItems: isMobile ? "flex-start" : "center",
+                    gap: "0.5rem",
                     padding: "0.55rem 0.75rem",
                     borderRadius: "0.75rem",
                     backgroundColor: "white",
@@ -763,6 +788,7 @@ export default function Compare() {
                         ? "#fee2e2"
                         : "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
                       color: inCompare ? "#b91c1c" : "white",
+                      alignSelf: isMobile ? "stretch" : "auto",
                     }}
                   >
                     {inCompare ? "Remove from compare" : "Add to compare"}

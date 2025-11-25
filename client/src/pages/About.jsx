@@ -1,11 +1,28 @@
+import { useState, useEffect } from "react";
+
 export default function About() {
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   return (
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "minmax(0, 1.7fr) minmax(0, 1.1fr)",
-        gap: "2rem",
+        gridTemplateColumns: isMobile
+          ? "minmax(0, 1fr)"
+          : "minmax(0, 1.7fr) minmax(0, 1.1fr)",
+        gap: isMobile ? "1.8rem" : "2rem",
         alignItems: "flex-start",
+        boxSizing: "border-box",
       }}
     >
       {/* Left: main content */}
@@ -17,7 +34,7 @@ export default function About() {
             letterSpacing: "0.16em",
             textTransform: "uppercase",
             color: "#0f766e",
-            marginBottom: "0.5rem",
+            marginBottom: "0.4rem",
           }}
         >
           About PakUniInfo
@@ -25,14 +42,14 @@ export default function About() {
 
         <h1
           style={{
-            fontSize: "2rem",
-            lineHeight: 1.25,
+            fontSize: isMobile ? "1.7rem" : "1.9rem",
             fontWeight: 800,
+            letterSpacing: "-0.03em",
             color: "#020617",
-            marginBottom: "1rem",
+            marginBottom: "0.75rem",
           }}
         >
-          A simple way to explore universities in Pakistan.
+          A small project to make university search less confusing.
         </h1>
 
         <p
@@ -45,187 +62,163 @@ export default function About() {
         >
           PakUniInfo is a personal project built to help students, parents, and
           teachers quickly explore universities across Pakistan. Instead of
-          jumping between dozens of different websites, the idea is to have one
-          place where you can:
+          jumping between dozens of tabs and websites, you can search, filter,
+          and review key information in one place.
         </p>
-
-        <ul
-          style={{
-            fontSize: "0.95rem",
-            color: "#475569",
-            lineHeight: 1.6,
-            paddingLeft: "1.3rem",
-            marginBottom: "1rem",
-          }}
-        >
-          <li>Browse universities by city, province and programs.</li>
-          <li>See a quick snapshot of what each university offers.</li>
-          <li>Shortlist interesting options to revisit later.</li>
-          <li>
-            Compare multiple universities side-by-side before making decisions.
-          </li>
-        </ul>
 
         <p
           style={{
-            fontSize: "0.95rem",
+            fontSize: "0.98rem",
             color: "#475569",
             lineHeight: 1.6,
-            marginBottom: "1rem",
+            marginBottom: "1.5rem",
           }}
         >
-          This is not an official portal or ranking system. It doesn&apos;t
-          replace guidance from teachers, counsellors, or official university
-          websites. Instead, it tries to be a clean, friendly starting point for
-          exploring &quot;What options do I even have?&quot;
+          It&apos;s not an official platform from any university or government —
+          it&apos;s a student-built tool designed to be simple, clean and easy
+          to understand, especially for FSc / ICS / A-level students and their
+          families.
         </p>
 
-        <h2
-          style={{
-            fontSize: "1.1rem",
-            fontWeight: 700,
-            color: "#0f172a",
-            marginBottom: "0.5rem",
-          }}
-        >
-          Who is this for?
-        </h2>
-
-        <p
-          style={{
-            fontSize: "0.95rem",
-            color: "#475569",
-            lineHeight: 1.6,
-            marginBottom: "0.8rem",
-          }}
-        >
-          PakUniInfo is mainly designed for:
-        </p>
-
-        <ul
-          style={{
-            fontSize: "0.95rem",
-            color: "#475569",
-            lineHeight: 1.6,
-            paddingLeft: "1.3rem",
-            marginBottom: "1rem",
-          }}
-        >
-          <li>
-            Students in FSc, ICS, A-levels and similar streams who are trying to
-            understand what universities exist in Pakistan.
-          </li>
-          <li>
-            Parents who want a simple overview of options for their children.
-          </li>
-          <li>
-            Teachers and counsellors who want a quick reference to show examples
-            of universities in different cities.
-          </li>
-        </ul>
-
-        <p
-          style={{
-            fontSize: "0.95rem",
-            color: "#475569",
-            lineHeight: 1.6,
-            marginBottom: "1rem",
-          }}
-        >
-          The focus is on early-stage guidance for 1st and 2nd year students
-          (FSc, ICS, A-levels) who are still discovering options. It&apos;s not
-          an official ranking or admissions portal — it&apos;s a helper tool to
-          start the conversation about &quot;Where could I study next?&quot;
-        </p>
-
-        <h2
-          style={{
-            fontSize: "1.1rem",
-            fontWeight: 700,
-            color: "#0f172a",
-            marginBottom: "0.5rem",
-          }}
-        >
-          How accurate is the data?
-        </h2>
-
-        <p
-          style={{
-            fontSize: "0.95rem",
-            color: "#475569",
-            lineHeight: 1.6,
-            marginBottom: "1rem",
-          }}
-        >
-          Data about universities (programs, fees, admission information, etc.)
-          can change frequently. PakUniInfo is a static project that tries to
-          provide a basic overview, but it may not always be fully up-to-date.
-          For any final decision, you should always:
-        </p>
-
-        <ul
-          style={{
-            fontSize: "0.95rem",
-            color: "#475569",
-            lineHeight: 1.6,
-            paddingLeft: "1.3rem",
-            marginBottom: "1rem",
-          }}
-        >
-          <li>Visit the official university website.</li>
-          <li>Check their latest admission advertisement or prospectus.</li>
-          <li>Confirm fee structures and deadlines directly with the university.</li>
-        </ul>
-
-        <p
-          style={{
-            fontSize: "0.95rem",
-            color: "#475569",
-            lineHeight: 1.6,
-            marginBottom: 0,
-          }}
-        >
-          Think of PakUniInfo as a friendly first step — not the final answer.
-        </p>
-      </section>
-
-      {/* Right: sidebar / project info */}
-      <aside
-        style={{
-          borderRadius: "1rem",
-          padding: "1.25rem 1.5rem",
-          backgroundColor: "#0f172a",
-          color: "white",
-          boxShadow: "0 16px 35px rgba(15,23,42,0.7)",
-        }}
-      >
-        <h2
-          style={{
-            fontSize: "1.05rem",
-            fontWeight: 600,
-            marginBottom: "0.75rem",
-          }}
-        >
-          Project snapshot
-        </h2>
-
-        <p
-          style={{
-            fontSize: "0.9rem",
-            color: "#e5e7eb",
-            lineHeight: 1.6,
-            marginBottom: "0.9rem",
-          }}
-        >
-          PakUniInfo is built as a student portfolio project — a practical way
-          to learn the MERN stack while building something useful for other
-          students in Pakistan.
-        </p>
-
+        {/* WHO IS THIS FOR */}
         <div
           style={{
-            marginBottom: "0.9rem",
-            fontSize: "0.88rem",
+            marginBottom: "1.4rem",
+            padding: "1rem 1.1rem",
+            borderRadius: "0.9rem",
+            backgroundColor: "#e5e7eb",
+            border: "1px solid #cbd5f5",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "1.05rem",
+              fontWeight: 700,
+              color: "#0f172a",
+              marginBottom: "0.5rem",
+            }}
+          >
+            Who is this for?
+          </h2>
+          <ul
+            style={{
+              margin: 0,
+              paddingLeft: "1.1rem",
+              color: "#475569",
+              fontSize: "0.95rem",
+              lineHeight: 1.6,
+            }}
+          >
+            <li>Students in FSc, ICS, I.Com and A-levels exploring options.</li>
+            <li>
+              Parents who want a clearer view of universities in different
+              cities.
+            </li>
+            <li>
+              Teachers / counsellors helping students shortlist and compare
+              universities.
+            </li>
+          </ul>
+        </div>
+
+        {/* WHAT YOU CAN DO */}
+        <div
+          style={{
+            marginBottom: "1.4rem",
+            padding: "1rem 1.1rem",
+            borderRadius: "0.9rem",
+            backgroundColor: "#f9fafb",
+            border: "1px solid #e5e7eb",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "1.1rem",
+              fontWeight: 700,
+              color: "#0f172a",
+              marginBottom: "0.5rem",
+            }}
+          >
+            What you can do here
+          </h2>
+
+          <ul
+            style={{
+              paddingLeft: "1.1rem",
+              margin: "0 0 0.6rem",
+              color: "#475569",
+              fontSize: "0.95rem",
+              lineHeight: 1.6,
+            }}
+          >
+            <li>Browse universities and filter by city / province.</li>
+            <li>See basic details, programs and ranking.</li>
+            <li>Save favourites to a shortlist.</li>
+            <li>Compare up to 3 universities side by side.</li>
+            <li>Read simple guidance for students, parents and teachers.</li>
+          </ul>
+        </div>
+
+        {/* HOW TO USE BEST */}
+        <div
+          style={{
+            marginBottom: "0.5rem",
+            padding: "1rem 1.1rem",
+            borderRadius: "0.9rem",
+            backgroundColor: "#eef2ff",
+            border: "1px solid #c7d2fe",
+          }}
+        >
+          <h2
+            style={{
+              fontSize: "1.05rem",
+              fontWeight: 700,
+              color: "#1e293b",
+              marginBottom: "0.5rem",
+            }}
+          >
+            How to use this site effectively
+          </h2>
+          <ol
+            style={{
+              margin: 0,
+              paddingLeft: "1.1rem",
+              color: "#1f2933",
+              fontSize: "0.95rem",
+              lineHeight: 1.6,
+            }}
+          >
+            <li>Start on the Explore page and filter by city / province.</li>
+            <li>Add universities that look interesting to your shortlist.</li>
+            <li>
+              Use the Compare page to see differences clearly (location,
+              programs, ranking, etc.).
+            </li>
+            <li>
+              Discuss the shortlist with parents / teachers and then visit
+              official websites for final details.
+            </li>
+          </ol>
+        </div>
+      </section>
+
+      {/* Right: project / tech info */}
+      <aside
+        style={{
+          borderRadius: "1.1rem",
+          padding: isMobile ? "1.3rem 1.2rem" : "1.5rem 1.5rem",
+          background:
+            "radial-gradient(circle at top left, #0f172a 0, #020617 40%, #111827 100%)",
+          color: "white",
+          boxShadow: "0 24px 60px rgba(15,23,42,0.9)",
+          boxSizing: "border-box",
+          marginTop: isMobile ? "0.1rem" : 0,
+        }}
+      >
+        <div
+          style={{
+            marginBottom: "1rem",
+            fontSize: "0.9rem",
             color: "#e5e7eb",
           }}
         >
@@ -239,7 +232,33 @@ export default function About() {
               color: "#a5b4fc",
             }}
           >
-            Tech stack
+            Behind the project
+          </p>
+          <p style={{ margin: 0, lineHeight: 1.6 }}>
+            PakUniInfo is built as a portfolio project to practise full-stack
+            development and solve a real problem students face when researching
+            universities in Pakistan.
+          </p>
+        </div>
+
+        <div
+          style={{
+            marginBottom: "1rem",
+            fontSize: "0.9rem",
+            color: "#e5e7eb",
+          }}
+        >
+          <p
+            style={{
+              margin: "0 0 0.35rem",
+              fontWeight: 600,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+              fontSize: "0.8rem",
+              color: "#a5b4fc",
+            }}
+          >
+            Under the hood
           </p>
           <ul style={{ margin: 0, paddingLeft: "1rem" }}>
             <li>React (Vite) frontend with React Router.</li>
@@ -271,39 +290,12 @@ export default function About() {
           <ul style={{ margin: 0, paddingLeft: "1rem" }}>
             <li>Richer university data (fees, admission info, etc.).</li>
             <li>
-              More filters and smarter guidance to suggest universities based on
-              interests and marks.
+              AI-based guidance to suggest universities based on interests and
+              marks.
             </li>
-            <li>Admin tools to manage and update the database.</li>
+            <li>Better mobile experience and more filters.</li>
+            <li>Export / share shortlists with parents or counsellors.</li>
           </ul>
-        </div>
-
-        <div
-          style={{
-            marginBottom: "0.9rem",
-            fontSize: "0.88rem",
-            color: "#e5e7eb",
-          }}
-        >
-          <p
-            style={{
-              margin: "0 0 0.35rem",
-              fontWeight: 600,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-              fontSize: "0.8rem",
-              color: "#a5b4fc",
-            }}
-          >
-            About the creator
-          </p>
-          <p style={{ margin: 0, lineHeight: 1.6 }}>
-            PakUniInfo was designed and developed by{" "}
-            <span style={{ fontWeight: 600, color: "#4ade80" }}>
-              Abdullah Mangrio
-            </span>{" "}
-            as a portfolio project to support students across Pakistan.
-          </p>
         </div>
 
         <p

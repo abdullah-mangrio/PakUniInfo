@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import LoadingSpinner from "../components/LoadingSpinner";
+import ErrorMessage from "../components/ErrorMessage";
 import {
   addToShortlist,
   removeFromShortlist,
   isInShortlist,
 } from "../utils/shortlist";
-import LoadingSpinner from "../components/LoadingSpinner";
-import ErrorMessage from "../components/ErrorMessage";
 
 export default function UniversityDetails() {
   const { id } = useParams();
@@ -15,61 +15,40 @@ export default function UniversityDetails() {
   const [university, setUniversity] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [saved, setSaved] = useState(false);
-  const [savedTick, setSavedTick] = useState(0); // force re-check of shortlist
 
-  // Helper: format fee nicely
-  const formatFee = (min, max, currency = "PKR") => {
-    if (!min && !max) return "Not available";
-    const nf = new Intl.NumberFormat("en-PK", {
-      maximumFractionDigits: 0,
-    });
+  // simple mobile breakpoint
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
 
-    if (min && max) {
-      return `${currency} ${nf.format(min)} – ${nf.format(
-        max
-      )} per year (approx.)`;
-    }
-    if (min && !max) {
-      return `${currency} ${nf.format(min)}+ per year (approx.)`;
-    }
-    if (!min && max) {
-      return `Up to ${currency} ${nf.format(max)} per year (approx.)`;
-    }
-    return "Not available";
-  };
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
-  // Helper: format date
-  const formatDate = (value) => {
-    if (!value) return "—";
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return "—";
-    return d.toLocaleDateString("en-PK", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
+  // fetch university
   const fetchUniversity = async () => {
+    if (!id) return;
     try {
       setLoading(true);
       setError("");
-
-      const res = await fetch(
-        `http://localhost:5000/api/universities/${id}`
-      );
-
+      const res = await fetch(`http://localhost:5000/api/universities/${id}`);
       if (!res.ok) {
-        throw new Error("Failed to fetch university details.");
+        throw new Error(`Request failed with status ${res.status}`);
       }
-
       const data = await res.json();
       setUniversity(data);
+      setSaved(isInShortlist(data._id));
     } catch (err) {
-      console.error(err);
+      console.error("Error loading university:", err);
       setError(
-        "We couldn’t load this university right now. Please try again in a moment."
+        err.message ||
+          "We couldn’t load this university right now. Please try again in a moment."
       );
     } finally {
       setLoading(false);
@@ -81,382 +60,409 @@ export default function UniversityDetails() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Sync saved state from localStorage
-  useEffect(() => {
-    if (university && university._id) {
-      setSaved(isInShortlist(university._id));
-    }
-  }, [university, savedTick]);
-
   const handleBack = () => {
-    navigate(-1);
+    // try going back; if nothing, go to explore
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/universities");
+    }
   };
 
   const handleToggleShortlist = () => {
-    if (!university || !university._id) return;
-
+    if (!university) return;
     if (saved) {
       removeFromShortlist(university._id);
+      setSaved(false);
     } else {
-      addToShortlist(university);
+      addToShortlist({
+        _id: university._id,
+        name: university.name,
+        location: university.location,
+        city: university.city,
+        province: university.province,
+        ranking: university.ranking,
+        programs: university.programs,
+        website: university.website,
+      });
+      setSaved(true);
     }
-
-    setSavedTick((v) => v + 1);
   };
 
   if (loading) {
     return (
       <div
         style={{
-          minHeight: "260px",
+          minHeight: "60vh",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
         }}
       >
-        <LoadingSpinner />
+        <LoadingSpinner label="Loading university details..." />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div style={{ display: "grid", gap: "1rem" }}>
+      <div
+        style={{
+          minHeight: "60vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "1rem",
+        }}
+      >
+        <ErrorMessage message={error} />
         <button
-          onClick={handleBack}
+          onClick={fetchUniversity}
           style={{
-            alignSelf: "flex-start",
-            padding: "0.5rem 1rem",
+            padding: "0.55rem 1.4rem",
             borderRadius: "999px",
             border: "none",
             background:
-              "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(37,99,235,0.95))",
+              "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
             color: "white",
-            fontSize: "0.85rem",
-            fontWeight: 500,
+            fontWeight: 600,
+            fontSize: "0.9rem",
             cursor: "pointer",
-            boxShadow: "0 4px 12px rgba(15,23,42,0.4)",
           }}
         >
-          ← Back
+          Try again
         </button>
-        <ErrorMessage message={error} onRetry={fetchUniversity} />
+        <button
+          onClick={() => navigate("/universities")}
+          style={{
+            padding: "0.4rem 1rem",
+            borderRadius: "999px",
+            border: "1px solid #cbd5f5",
+            backgroundColor: "white",
+            fontSize: "0.85rem",
+            cursor: "pointer",
+          }}
+        >
+          Back to Explore
+        </button>
       </div>
     );
   }
 
-  if (!university) {
-    return (
-      <div style={{ display: "grid", gap: "1rem" }}>
-        <button
-          onClick={handleBack}
-          style={{
-            alignSelf: "flex-start",
-            padding: "0.5rem 1rem",
-            borderRadius: "999px",
-            border: "none",
-            background:
-              "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(37,99,235,0.95))",
-            color: "white",
-            fontSize: "0.85rem",
-            fontWeight: 500,
-            cursor: "pointer",
-            boxShadow: "0 4px 12px rgba(15,23,42,0.4)",
-          }}
-        >
-          ← Back
-        </button>
-        <p style={{ fontSize: "0.95rem", color: "#64748b" }}>
-          University not found.
-        </p>
-      </div>
-    );
-  }
+  if (!university) return null;
 
   const {
     name,
-    location,
     city,
     province,
+    location,
     ranking,
-    programs,
-    website,
     description,
+    programs,
     tuitionFeeMin,
     tuitionFeeMax,
     tuitionFeeCurrency,
     tuitionFeeNote,
-    admissionCycles = [],
     admissionNotes,
+    admissionCycles,
+    website,
     logoUrl,
     heroImageUrl,
-    galleryImages = [],
+    galleryImages,
   } = university;
 
-  // sort admission cycles by deadline (ascending)
-  const sortedCycles = [...admissionCycles].sort((a, b) => {
-    const da = a.applicationDeadline ? new Date(a.applicationDeadline) : null;
-    const db = b.applicationDeadline ? new Date(b.applicationDeadline) : null;
-    if (!da && !db) return 0;
-    if (!da) return 1;
-    if (!db) return -1;
-    return da - db;
-  });
+  const fullLocation =
+    city && province
+      ? `${city}, ${province}`
+      : location || city || "Location not specified";
+
+  const hasFees =
+    typeof tuitionFeeMin === "number" || typeof tuitionFeeMax === "number";
+
+  const formattedFeeRange = () => {
+    const cur = tuitionFeeCurrency || "PKR";
+    if (!tuitionFeeMin && !tuitionFeeMax) return "Not available";
+    if (tuitionFeeMin && tuitionFeeMax) {
+      return `${cur} ${tuitionFeeMin.toLocaleString("en-PK")} – ${tuitionFeeMax.toLocaleString(
+        "en-PK"
+      )} per year`;
+    }
+    if (tuitionFeeMin) {
+      return `From ${cur} ${tuitionFeeMin.toLocaleString("en-PK")} per year`;
+    }
+    if (tuitionFeeMax) {
+      return `Up to ${cur} ${tuitionFeeMax.toLocaleString("en-PK")} per year`;
+    }
+    return "Not available";
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("en-PK", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.75rem" }}>
-      {/* TOP BAR: BACK + SHORTLIST */}
-      <div
+    <div
+      style={{
+        display: "grid",
+        gap: "1.75rem",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* BACK BUTTON */}
+      <button
+        onClick={handleBack}
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          gap: "1rem",
-          alignItems: "center",
+          marginBottom: "-0.5rem",
+          alignSelf: "flex-start",
+          padding: "0.4rem 0.9rem",
+          borderRadius: "999px",
+          border: "1px solid #cbd5f5",
+          backgroundColor: "white",
+          fontSize: "0.85rem",
+          cursor: "pointer",
         }}
       >
-        <button
-          onClick={handleBack}
-          style={{
-            padding: "0.5rem 1.1rem",
-            borderRadius: "999px",
-            border: "none",
-            background:
-              "linear-gradient(135deg, rgba(15,23,42,0.9), rgba(37,99,235,0.95))",
-            color: "white",
-            fontSize: "0.85rem",
-            fontWeight: 500,
-            cursor: "pointer",
-            boxShadow: "0 4px 12px rgba(15,23,42,0.4)",
-          }}
-        >
-          ← Back to results
-        </button>
+        ← Back
+      </button>
 
-        <button
-          onClick={handleToggleShortlist}
-          style={{
-            padding: "0.55rem 1.3rem",
-            borderRadius: "999px",
-            border: "none",
-            cursor: "pointer",
-            background: saved
-              ? "linear-gradient(135deg, #22c55e, #16a34a)"
-              : "white",
-            color: saved ? "white" : "#0f172a",
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.4rem",
-            boxShadow: saved
-              ? "0 8px 18px rgba(34,197,94,0.55)"
-              : "0 5px 12px rgba(0,0,0,0.08)",
-          }}
-        >
-          <span style={{ fontSize: "1rem" }}>{saved ? "★" : "☆"}</span>
-          {saved ? "Saved to Shortlist" : "Save to Shortlist"}
-        </button>
-      </div>
-
-      {/* HERO / HEADER */}
+      {/* HERO SECTION */}
       <section
         style={{
-          position: "relative",
+          borderRadius: "1.1rem",
           overflow: "hidden",
-          borderRadius: "1.5rem",
-          backgroundColor: "#0f172a",
+          backgroundColor: "#020617",
           color: "white",
-          minHeight: "210px",
-          display: "flex",
-          alignItems: "stretch",
-          boxShadow: "0 16px 32px rgba(15,23,42,0.65)",
+          boxShadow: "0 18px 45px rgba(15,23,42,0.85)",
         }}
       >
-        {heroImageUrl ? (
+        <div
+          style={{
+            position: "relative",
+            minHeight: isMobile ? "180px" : "220px",
+            overflow: "hidden",
+          }}
+        >
+          {/* Background hero */}
           <div
             style={{
               position: "absolute",
               inset: 0,
-              backgroundImage: `url(${heroImageUrl})`,
-              backgroundSize: "cover",
+              backgroundImage: heroImageUrl
+                ? `url(${heroImageUrl})`
+                : "radial-gradient(circle at 0% 0%, #22c55e 0, #0f172a 40%, #020617 85%)",
+              backgroundSize: heroImageUrl ? "cover" : "auto",
               backgroundPosition: "center",
-              filter: "brightness(0.6)",
+              filter: heroImageUrl ? "brightness(0.7)" : "none",
+              transform: "scale(1.03)",
             }}
           />
-        ) : (
+          {/* Gradient overlay */}
           <div
             style={{
               position: "absolute",
               inset: 0,
               background:
-                "radial-gradient(circle at top left, #1d4ed8, #020617 55%)",
+                "linear-gradient(to right, rgba(15,23,42,0.95), rgba(15,23,42,0.7), transparent)",
             }}
           />
-        )}
 
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(120deg, rgba(15,23,42,0.85), rgba(15,23,42,0.15))",
-          }}
-        />
-
-        <div
-          style={{
-            position: "relative",
-            zIndex: 1,
-            display: "flex",
-            flex: 1,
-            padding: "1.75rem 1.75rem 1.75rem",
-            gap: "1.75rem",
-            alignItems: "center",
-          }}
-        >
-          {/* Logo */}
+          {/* Content */}
           <div
             style={{
-              flexShrink: 0,
-              width: "88px",
-              height: "88px",
-              borderRadius: "1.5rem",
-              backgroundColor: "rgba(15,23,42,0.85)",
-              border: "1px solid rgba(148,163,184,0.45)",
+              position: "relative",
+              zIndex: 1,
+              padding: isMobile ? "1.2rem 1.2rem 1.5rem" : "1.7rem 1.8rem",
               display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              overflow: "hidden",
+              flexDirection: isMobile ? "column" : "row",
+              alignItems: isMobile ? "flex-start" : "center",
+              gap: "1.4rem",
+              boxSizing: "border-box",
             }}
           >
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={`${name} logo`}
+            {/* Logo / initials */}
+            <div
+              style={{
+                width: 60,
+                height: 60,
+                borderRadius: "1rem",
+                background:
+                  "conic-gradient(from 210deg at 50% 50%, #22c55e, #22c55e, #0ea5e9, #6366f1, #22c55e)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 12px 35px rgba(34,197,94,0.65)",
+                flexShrink: 0,
+              }}
+            >
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={`${name} logo`}
+                  style={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: "0.8rem",
+                    objectFit: "cover",
+                    backgroundColor: "#020617",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 46,
+                    height: 46,
+                    borderRadius: "0.8rem",
+                    backgroundColor: "#020617",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "1.2rem",
+                    fontWeight: 700,
+                    color: "#bbf7d0",
+                  }}
+                >
+                  {name?.[0] || "U"}
+                </div>
+              )}
+            </div>
+
+            <div
+              style={{
+                display: "grid",
+                gap: "0.3rem",
+                flex: 1,
+              }}
+            >
+              <h1
                 style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
+                  margin: 0,
+                  fontSize: isMobile ? "1.25rem" : "1.7rem",
+                  fontWeight: 800,
+                  letterSpacing: "-0.03em",
                 }}
-              />
-            ) : (
-              <span
+              >
+                {name}
+              </h1>
+              <p
                 style={{
-                  fontSize: "1.4rem",
-                  fontWeight: 700,
+                  margin: 0,
+                  fontSize: "0.9rem",
                   color: "#e5e7eb",
                 }}
               >
-                {name?.charAt(0) || "U"}
-              </span>
-            )}
-          </div>
-
-          {/* Main info */}
-          <div style={{ display: "grid", gap: "0.4rem", flex: 1 }}>
-            <h1
-              style={{
-                fontSize: "1.5rem",
-                fontWeight: 700,
-                letterSpacing: "-0.02em",
-              }}
-            >
-              {name}
-            </h1>
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: "0.6rem",
-                fontSize: "0.85rem",
-                color: "#e5e7eb",
-              }}
-            >
-              {(city || location) && (
-                <span
+                📍 {fullLocation}
+              </p>
+              {ranking != null && (
+                <p
                   style={{
-                    padding: "0.2rem 0.7rem",
-                    borderRadius: "999px",
-                    backgroundColor: "rgba(15,23,42,0.65)",
-                    border: "1px solid rgba(148,163,184,0.6)",
+                    margin: 0,
+                    fontSize: "0.9rem",
+                    color: "#facc15",
                   }}
                 >
-                  📍{" "}
-                  {city ? `${city}${province ? `, ${province}` : ""}` : location}
-                </span>
+                  National ranking:{" "}
+                  <span style={{ fontWeight: 700 }}>#{ranking}</span>
+                </p>
               )}
-              {ranking && (
-                <span
+              {Array.isArray(programs) && programs.length > 0 && (
+                <p
                   style={{
-                    padding: "0.2rem 0.7rem",
-                    borderRadius: "999px",
-                    backgroundColor: "rgba(22,163,74,0.2)",
-                    border: "1px solid rgba(34,197,94,0.7)",
+                    margin: "0.25rem 0 0",
+                    fontSize: "0.85rem",
+                    color: "#cbd5f5",
                   }}
                 >
-                  🏆 Ranking: #{ranking}
-                </span>
-              )}
-              {programs && programs.length > 0 && (
-                <span
-                  style={{
-                    padding: "0.2rem 0.7rem",
-                    borderRadius: "999px",
-                    backgroundColor: "rgba(15,23,42,0.65)",
-                    border: "1px solid rgba(148,163,184,0.6)",
-                  }}
-                >
-                  🎓 {programs.slice(0, 2).join(" · ")}
-                  {programs.length > 2 ? ` +${programs.length - 2} more` : ""}
-                </span>
+                  Popular programs:{" "}
+                  <span style={{ color: "white" }}>
+                    {programs.slice(0, 3).join(", ")}
+                    {programs.length > 3 ? " +" : ""}
+                  </span>
+                </p>
               )}
             </div>
-            {website && (
-              <a
-                href={website}
-                target="_blank"
-                rel="noreferrer"
+
+            {/* Shortlist button */}
+            <div
+              style={{
+                alignSelf: isMobile ? "stretch" : "center",
+              }}
+            >
+              <button
+                onClick={handleToggleShortlist}
                 style={{
-                  marginTop: "0.3rem",
+                  width: isMobile ? "100%" : "auto",
+                  padding: "0.55rem 1.4rem",
+                  borderRadius: "999px",
+                  border: saved ? "none" : "1px solid #facc15",
+                  background: saved
+                    ? "linear-gradient(to right, #facc15, #f97316)"
+                    : "rgba(15,23,42,0.65)",
+                  color: saved ? "#0f172a" : "#facc15",
+                  fontWeight: 600,
                   fontSize: "0.85rem",
-                  color: "#a5b4fc",
-                  textDecoration: "underline",
-                  width: "fit-content",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "0.35rem",
+                  boxShadow: saved
+                    ? "0 8px 18px rgba(250,204,21,0.55)"
+                    : "0 6px 16px rgba(15,23,42,0.7)",
                 }}
               >
-                Visit official website ↗
-              </a>
-            )}
+                <span>{saved ? "★" : "☆"}</span>
+                <span>
+                  {saved ? "Saved to shortlist" : "Save to shortlist"}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* MAIN DETAILS LAYOUT */}
+      {/* DETAILS LAYOUT */}
       <section
         style={{
           display: "grid",
-          gridTemplateColumns: "minmax(0, 1.7fr) minmax(0, 1.25fr)",
+          gridTemplateColumns: isMobile
+            ? "minmax(0, 1fr)"
+            : "minmax(0, 1.7fr) minmax(0, 1.1fr)",
           gap: "1.75rem",
           alignItems: "flex-start",
+          boxSizing: "border-box",
         }}
       >
-        {/* LEFT: DESCRIPTION, PROGRAMS, ADMISSIONS */}
-        <div style={{ display: "grid", gap: "1.25rem" }}>
+        {/* MAIN COLUMN */}
+        <div
+          style={{
+            display: "grid",
+            gap: "1.25rem",
+          }}
+        >
           {/* Overview */}
-          <div
+          <article
             style={{
-              padding: "1.4rem 1.5rem",
-              borderRadius: "1.25rem",
+              borderRadius: "1rem",
               backgroundColor: "white",
               border: "1px solid #e2e8f0",
-              boxShadow: "0 8px 18px rgba(15,23,42,0.06)",
+              padding: "1.1rem 1.25rem",
+              boxShadow: "0 12px 26px rgba(15,23,42,0.08)",
             }}
           >
             <h2
               style={{
-                fontSize: "1rem",
-                fontWeight: 600,
-                marginBottom: "0.75rem",
+                margin: 0,
+                marginBottom: "0.45rem",
+                fontSize: "1.05rem",
+                fontWeight: 700,
                 color: "#0f172a",
               }}
             >
@@ -464,49 +470,52 @@ export default function UniversityDetails() {
             </h2>
             <p
               style={{
+                margin: 0,
                 fontSize: "0.93rem",
-                color: "#475569",
+                color: "#4b5563",
                 lineHeight: 1.6,
               }}
             >
-              {description || "No detailed description has been added yet."}
+              {description ||
+                "No detailed description is available yet for this university."}
             </p>
-          </div>
+          </article>
 
           {/* Programs */}
-          <div
+          <article
             style={{
-              padding: "1.4rem 1.5rem",
-              borderRadius: "1.25rem",
+              borderRadius: "1rem",
               backgroundColor: "white",
               border: "1px solid #e2e8f0",
-              boxShadow: "0 8px 18px rgba(15,23,42,0.05)",
+              padding: "1.1rem 1.25rem",
+              boxShadow: "0 12px 26px rgba(15,23,42,0.08)",
             }}
           >
             <h2
               style={{
-                fontSize: "1rem",
-                fontWeight: 600,
-                marginBottom: "0.75rem",
+                margin: 0,
+                marginBottom: "0.5rem",
+                fontSize: "1.05rem",
+                fontWeight: 700,
                 color: "#0f172a",
               }}
             >
-              Offered Programs
+              Major programs
             </h2>
-            {programs && programs.length > 0 ? (
+            {Array.isArray(programs) && programs.length > 0 ? (
               <div
                 style={{
                   display: "flex",
                   flexWrap: "wrap",
-                  gap: "0.5rem",
+                  gap: "0.45rem",
                 }}
               >
                 {programs.map((prog) => (
                   <span
                     key={prog}
                     style={{
-                      fontSize: "0.85rem",
-                      padding: "0.3rem 0.7rem",
+                      fontSize: "0.82rem",
+                      padding: "0.25rem 0.7rem",
                       borderRadius: "999px",
                       backgroundColor: "#eff6ff",
                       border: "1px solid #bfdbfe",
@@ -518,76 +527,65 @@ export default function UniversityDetails() {
                 ))}
               </div>
             ) : (
-              <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
-                Programs are not listed yet.
-              </p>
-            )}
-          </div>
-
-          {/* Admission info */}
-          <div
-            style={{
-              padding: "1.4rem 1.5rem 1.2rem",
-              borderRadius: "1.25rem",
-              backgroundColor: "white",
-              border: "1px solid #e2e8f0",
-              boxShadow: "0 8px 18px rgba(15,23,42,0.05)",
-              display: "grid",
-              gap: "0.9rem",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "baseline",
-                gap: "0.75rem",
-              }}
-            >
-              <h2
+              <p
                 style={{
-                  fontSize: "1rem",
-                  fontWeight: 600,
-                  color: "#0f172a",
+                  margin: 0,
+                  fontSize: "0.9rem",
+                  color: "#6b7280",
                 }}
               >
-                Admission Timeline
-              </h2>
-              {admissionNotes && (
-                <span
-                  style={{
-                    fontSize: "0.8rem",
-                    color: "#0f766e",
-                    padding: "0.15rem 0.6rem",
-                    borderRadius: "999px",
-                    backgroundColor: "#ecfeff",
-                    border: "1px solid #a5f3fc",
-                  }}
-                >
-                  {admissionNotes}
-                </span>
-              )}
-            </div>
+                Program information has not been added yet.
+              </p>
+            )}
+          </article>
 
-            {sortedCycles.length > 0 ? (
+          {/* Admission info */}
+          <article
+            style={{
+              borderRadius: "1rem",
+              backgroundColor: "white",
+              border: "1px solid #e2e8f0",
+              padding: "1.1rem 1.25rem",
+              boxShadow: "0 12px 26px rgba(15,23,42,0.08)",
+            }}
+          >
+            <h2
+              style={{
+                margin: 0,
+                marginBottom: "0.5rem",
+                fontSize: "1.05rem",
+                fontWeight: 700,
+                color: "#0f172a",
+              }}
+            >
+              Admission details
+            </h2>
+            {admissionNotes && (
+              <p
+                style={{
+                  margin: "0 0 0.6rem",
+                  fontSize: "0.9rem",
+                  color: "#4b5563",
+                }}
+              >
+                {admissionNotes}
+              </p>
+            )}
+            {Array.isArray(admissionCycles) && admissionCycles.length > 0 ? (
               <div
                 style={{
                   display: "grid",
-                  gap: "0.7rem",
-                  marginTop: "0.1rem",
+                  gap: "0.6rem",
                 }}
               >
-                {sortedCycles.map((cycle, idx) => (
+                {admissionCycles.map((cycle, idx) => (
                   <div
                     key={idx}
                     style={{
-                      padding: "0.7rem 0.9rem",
-                      borderRadius: "0.9rem",
+                      padding: "0.65rem 0.75rem",
+                      borderRadius: "0.75rem",
                       backgroundColor: "#f9fafb",
                       border: "1px solid #e5e7eb",
-                      display: "grid",
-                      gap: "0.2rem",
-                      fontSize: "0.86rem",
                     }}
                   >
                     <div
@@ -595,246 +593,261 @@ export default function UniversityDetails() {
                         display: "flex",
                         justifyContent: "space-between",
                         gap: "0.5rem",
-                        alignItems: "center",
+                        marginBottom: "0.2rem",
                       }}
                     >
                       <span
                         style={{
+                          fontSize: "0.9rem",
                           fontWeight: 600,
-                          color: "#0f172a",
+                          color: "#111827",
                         }}
                       >
-                        {cycle.name || "Admission Cycle"}
+                        {cycle.name || "Admission cycle"}
                       </span>
-                      <span
-                        style={{
-                          fontSize: "0.78rem",
-                          color: "#6b7280",
-                        }}
-                      >
-                        {cycle.applicationOpenDate
-                          ? `Opens: ${formatDate(cycle.applicationOpenDate)}`
-                          : "Opening date: —"}
-                      </span>
+                      {cycle.applicationDeadline && (
+                        <span
+                          style={{
+                            fontSize: "0.8rem",
+                            padding: "0.15rem 0.55rem",
+                            borderRadius: "999px",
+                            backgroundColor: "#fee2e2",
+                            color: "#b91c1c",
+                          }}
+                        >
+                          Deadline: {formatDate(cycle.applicationDeadline)}
+                        </span>
+                      )}
                     </div>
-                    <div style={{ color: "#374151" }}>
-                      Deadline:{" "}
-                      <span style={{ fontWeight: 500 }}>
-                        {formatDate(cycle.applicationDeadline)}
-                      </span>
+                    <div
+                      style={{
+                        fontSize: "0.82rem",
+                        color: "#4b5563",
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: "0.5rem",
+                      }}
+                    >
+                      {cycle.applicationOpenDate && (
+                        <span>Opens: {formatDate(cycle.applicationOpenDate)}</span>
+                      )}
+                      {cycle.notes && (
+                        <span
+                          style={{
+                            borderLeft: "1px solid #e5e7eb",
+                            paddingLeft: "0.5rem",
+                          }}
+                        >
+                          {cycle.notes}
+                        </span>
+                      )}
                     </div>
-                    {cycle.notes && (
-                      <div
-                        style={{
-                          fontSize: "0.8rem",
-                          color: "#6b7280",
-                          marginTop: "0.1rem",
-                        }}
-                      >
-                        {cycle.notes}
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>
             ) : (
-              <p style={{ fontSize: "0.9rem", color: "#64748b" }}>
-                No specific admission cycles have been added yet. Check the
-                official website for the latest admission schedule.
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: "0.9rem",
+                  color: "#6b7280",
+                }}
+              >
+                Admission cycle details have not been added yet.
               </p>
             )}
-          </div>
+          </article>
+
+          {/* Gallery */}
+          {Array.isArray(galleryImages) &&
+            galleryImages.length > 0 && (
+              <article
+                style={{
+                  borderRadius: "1rem",
+                  backgroundColor: "white",
+                  border: "1px solid #e2e8f0",
+                  padding: "1.1rem 1.25rem 1.2rem",
+                  boxShadow: "0 12px 26px rgba(15,23,42,0.08)",
+                }}
+              >
+                <h2
+                  style={{
+                    margin: 0,
+                    marginBottom: "0.5rem",
+                    fontSize: "1.05rem",
+                    fontWeight: 700,
+                    color: "#0f172a",
+                  }}
+                >
+                  Campus snapshots
+                </h2>
+                <div
+                  style={{
+                    display: "grid",
+                    gap: "0.6rem",
+                    gridTemplateColumns: isMobile
+                      ? "minmax(0, 1fr)"
+                      : "repeat(3, minmax(0, 1fr))",
+                  }}
+                >
+                  {galleryImages.map((url, idx) => (
+                    <div
+                      key={`${url}-${idx}`}
+                      style={{
+                        borderRadius: "0.75rem",
+                        overflow: "hidden",
+                        border: "1px solid #e5e7eb",
+                        backgroundColor: "#f1f5f9",
+                      }}
+                    >
+                      <img
+                        src={url}
+                        alt={`${name} campus ${idx + 1}`}
+                        style={{
+                          width: "100%",
+                          height: 140,
+                          objectFit: "cover",
+                          display: "block",
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </article>
+            )}
         </div>
 
-        {/* RIGHT: QUICK FACTS / FEES / GALLERY */}
+        {/* SIDEBAR COLUMN */}
         <aside
           style={{
             display: "grid",
-            gap: "1.25rem",
+            gap: "1.1rem",
           }}
         >
-          {/* Fee card */}
-          <div
+          {/* Quick facts */}
+          <article
             style={{
-              padding: "1.3rem 1.4rem",
-              borderRadius: "1.25rem",
-              background:
-                "radial-gradient(circle at top left, #eff6ff, #f8fafc)",
-              border: "1px solid #bfdbfe",
-              boxShadow: "0 10px 20px rgba(15,23,42,0.08)",
-              display: "grid",
-              gap: "0.5rem",
+              borderRadius: "1rem",
+              backgroundColor: "#020617",
+              color: "white",
+              padding: "1.1rem 1.25rem",
+              boxShadow: "0 16px 36px rgba(15,23,42,0.9)",
+              border: "1px solid rgba(148,163,184,0.55)",
             }}
           >
             <h2
               style={{
-                fontSize: "1rem",
-                fontWeight: 600,
-                color: "#1e3a8a",
-                marginBottom: "0.1rem",
+                margin: 0,
+                marginBottom: "0.45rem",
+                fontSize: "1.02rem",
+                fontWeight: 700,
               }}
             >
-              Estimated Tuition Fee
+              Quick facts
             </h2>
-            <div
+            <dl
               style={{
-                fontSize: "0.95rem",
-                fontWeight: 600,
-                color: "#1e293b",
+                margin: 0,
+                display: "grid",
+                rowGap: "0.45rem",
+                columnGap: "0.5rem",
+                gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1.4fr)",
+                fontSize: "0.86rem",
               }}
             >
-              {formatFee(tuitionFeeMin, tuitionFeeMax, tuitionFeeCurrency)}
-            </div>
+              <dt style={{ color: "#9ca3af" }}>Location</dt>
+              <dd style={{ margin: 0, color: "#e5e7eb" }}>{fullLocation}</dd>
+
+              <dt style={{ color: "#9ca3af" }}>Ranking</dt>
+              <dd style={{ margin: 0, color: "#fde68a" }}>
+                {ranking != null ? `#${ranking}` : "Not listed"}
+              </dd>
+
+              <dt style={{ color: "#9ca3af" }}>Programs</dt>
+              <dd style={{ margin: 0, color: "#e5e7eb" }}>
+                {Array.isArray(programs) && programs.length > 0
+                  ? `${programs.length} program${
+                      programs.length === 1 ? "" : "s"
+                    }`
+                  : "Not available"}
+              </dd>
+
+              <dt style={{ color: "#9ca3af" }}>Fee range</dt>
+              <dd style={{ margin: 0, color: "#bbf7d0" }}>
+                {hasFees ? formattedFeeRange() : "Not available"}
+              </dd>
+            </dl>
+
             {tuitionFeeNote && (
               <p
                 style={{
+                  margin: "0.75rem 0 0",
                   fontSize: "0.8rem",
-                  color: "#64748b",
-                  lineHeight: 1.5,
-                  marginTop: "0.25rem",
+                  color: "#9ca3af",
                 }}
               >
                 {tuitionFeeNote}
               </p>
             )}
-            <p
-              style={{
-                fontSize: "0.78rem",
-                color: "#94a3b8",
-                marginTop: "0.35rem",
-              }}
-            >
-              * These are approximate yearly tuition figures. Exact fee depends
-              on program, semester load, and official notifications.
-            </p>
-          </div>
+          </article>
 
-          {/* Quick facts */}
-          <div
+          {/* Website card */}
+          <article
             style={{
-              padding: "1.2rem 1.3rem",
-              borderRadius: "1.25rem",
+              borderRadius: "1rem",
               backgroundColor: "white",
               border: "1px solid #e2e8f0",
-              boxShadow: "0 8px 18px rgba(15,23,42,0.05)",
-              display: "grid",
-              gap: "0.55rem",
+              padding: "1rem 1.15rem",
+              boxShadow: "0 12px 26px rgba(15,23,42,0.08)",
               fontSize: "0.9rem",
-              color: "#475569",
+              color: "#4b5563",
             }}
           >
-            <h2
+            <h3
               style={{
-                fontSize: "0.95rem",
+                margin: 0,
+                marginBottom: "0.4rem",
+                fontSize: "0.98rem",
                 fontWeight: 600,
                 color: "#0f172a",
-                marginBottom: "0.25rem",
               }}
             >
-              Quick Facts
-            </h2>
-            {location && (
-              <div>
-                <span style={{ fontWeight: 500 }}>Location: </span>
-                <span>{location}</span>
-              </div>
-            )}
-            {province && (
-              <div>
-                <span style={{ fontWeight: 500 }}>Province: </span>
-                <span>{province}</span>
-              </div>
-            )}
-            {ranking && (
-              <div>
-                <span style={{ fontWeight: 500 }}>Ranking: </span>
-                <span>#{ranking}</span>
-              </div>
-            )}
-            {website && (
-              <div style={{ marginTop: "0.3rem" }}>
-                <span style={{ fontWeight: 500 }}>Website: </span>
+              Official website
+            </h3>
+            {website ? (
+              <>
+                <p style={{ margin: 0, marginBottom: "0.4rem" }}>
+                  Visit the official website for detailed admission criteria,
+                  updated fee structures and announcements.
+                </p>
                 <a
                   href={website}
                   target="_blank"
                   rel="noreferrer"
                   style={{
-                    color: "#2563eb",
-                    textDecoration: "underline",
-                    wordBreak: "break-all",
+                    display: "inline-block",
+                    marginTop: "0.15rem",
+                    padding: "0.4rem 0.9rem",
+                    borderRadius: "999px",
+                    border: "none",
+                    background:
+                      "linear-gradient(to right, #0ea5e9, #6366f1)",
+                    color: "white",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    textDecoration: "none",
+                    boxShadow: "0 10px 24px rgba(59,130,246,0.55)",
                   }}
                 >
-                  {website}
+                  Visit website ↗
                 </a>
-              </div>
+              </>
+            ) : (
+              <p style={{ margin: 0 }}>
+                Website information is not available for this university yet.
+              </p>
             )}
-          </div>
-
-          {/* Gallery */}
-          {galleryImages && galleryImages.length > 0 && (
-            <div
-              style={{
-                padding: "1.1rem 1.2rem",
-                borderRadius: "1.25rem",
-                backgroundColor: "white",
-                border: "1px solid #e2e8f0",
-                boxShadow: "0 8px 18px rgba(15,23,42,0.05)",
-              }}
-            >
-              <h2
-                style={{
-                  fontSize: "0.95rem",
-                  fontWeight: 600,
-                  color: "#0f172a",
-                  marginBottom: "0.7rem",
-                }}
-              >
-                Campus Glimpse
-              </h2>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-                  gap: "0.5rem",
-                }}
-              >
-                {galleryImages.slice(0, 4).map((img, idx) => (
-                  <div
-                    key={idx}
-                    style={{
-                      position: "relative",
-                      overflow: "hidden",
-                      borderRadius: "0.9rem",
-                      backgroundColor: "#e5e7eb",
-                      height: "90px",
-                    }}
-                  >
-                    <img
-                      src={img}
-                      alt={`${name} campus ${idx + 1}`}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-              {galleryImages.length > 4 && (
-                <p
-                  style={{
-                    marginTop: "0.5rem",
-                    fontSize: "0.8rem",
-                    color: "#94a3b8",
-                  }}
-                >
-                  +{galleryImages.length - 4} more image
-                  {galleryImages.length - 4 > 1 ? "s" : ""} available in admin.
-                </p>
-              )}
-            </div>
-          )}
+          </article>
         </aside>
       </section>
     </div>
