@@ -1,48 +1,61 @@
 import mongoose from "mongoose";
 import University from "../models/University.js";
 
-
-
-
 // GET /api/universities  -> get all universities (with optional filters)
 export const getUniversities = async (req, res) => {
   try {
-    const { province, location, program, name, sortBy, sortOrder, page, limit } = req.query;
+    const {
+      province,
+      location,
+      city,
+      program,
+      name,
+      search,
+      sortBy,
+      sortOrder,
+      page,
+      limit,
+    } = req.query;
 
     const filter = {};
 
-    // province filter (case-insensitive)
+    // province filter (case-insensitive exact match)
     if (province) {
       filter.province = { $regex: `^${province}$`, $options: "i" };
     }
 
-    // location filter (case-insensitive)
-    if (location) {
-      filter.location = { $regex: `^${location}$`, $options: "i" };
+    // ✅ name search (support both "name" and old "search")
+    const nameQuery = name || search;
+    if (nameQuery) {
+      filter.name = { $regex: nameQuery, $options: "i" };
     }
 
-    // program filter (case-insensitive)
+    // ✅ city/location: support both and match either city OR location text
+    const cityQuery = city || location;
+    if (cityQuery) {
+      filter.$or = [
+        { city: { $regex: cityQuery, $options: "i" } },
+        { location: { $regex: cityQuery, $options: "i" } },
+      ];
+    }
+
+    // program filter (array-friendly, case-insensitive)
     if (program) {
       filter.programs = { $regex: program, $options: "i" };
     }
 
-    // name search (case-insensitive, partial)
-    if (name) {
-      filter.name = { $regex: name, $options: "i" };
-    }
-
     // Sorting
-    const allowedSortFields = ["name", "ranking", "location", "province"];
-    let sort = {};
+    const allowedSortFields = ["name", "ranking", "location", "province", "city"];
+    let sort = { ranking: -1 }; // default
 
     if (sortBy && allowedSortFields.includes(sortBy)) {
       const order = sortOrder === "desc" ? -1 : 1; // default asc
-      sort[sortBy] = order;
+      sort = { [sortBy]: order };
     }
 
     // ⭐ Pagination
-    const pageNumber = Number(page) || 1;      // default: page 1
-    const limitNumber = Number(limit) || 10;   // default: 10 per page
+    const pageNumber = Number(page) || 1; // default: page 1
+    const limitNumber = Number(limit) || 10; // default: 10 per page
     const skip = (pageNumber - 1) * limitNumber;
 
     // Total count (for this filter)
@@ -58,24 +71,15 @@ export const getUniversities = async (req, res) => {
       currentPage: pageNumber,
       totalPages: Math.ceil(total / limitNumber),
       totalResults: total,
-      results: universities
+      results: universities,
     });
-
   } catch (err) {
     console.error("Error in getUniversities:", err.message);
     return res.status(500).json({ message: "Server error" });
   }
 };
 
-
-
-
-
-
-
 //------------------------------------------------------------ADD SECTION--------------------------------------------------------------------------
-
-
 
 // POST /api/universities  -> add a new university
 export const addUniversity = async (req, res) => {
@@ -87,13 +91,14 @@ export const addUniversity = async (req, res) => {
     console.error("Error in addUniversity:", err.message);
 
     if (err.name === "ValidationError") {
-      return res.status(400).json({ message: "Validation error", details: err.message });
+      return res
+        .status(400)
+        .json({ message: "Validation error", details: err.message });
     }
 
     return res.status(500).json({ message: "Server error" });
   }
 };
-
 
 //---------------------------------------------------------------GET UNI BY ID -----------------------------------------------------------------------
 
@@ -120,10 +125,7 @@ export const getUniversityById = async (req, res) => {
   }
 };
 
-
 //-----------------------------------------------------------UPDATE BY ID---------------------------------------------------------------------------
-
-
 
 // PUT /api/universities/:id  -> update by ID
 export const updateUniversity = async (req, res) => {
@@ -137,7 +139,7 @@ export const updateUniversity = async (req, res) => {
   try {
     const updated = await University.findByIdAndUpdate(id, req.body, {
       new: true,
-      runValidators: true
+      runValidators: true,
     });
 
     if (!updated) {
@@ -149,7 +151,9 @@ export const updateUniversity = async (req, res) => {
     console.error("Error in updateUniversity:", err);
 
     if (err.name === "ValidationError") {
-      return res.status(400).json({ message: "Validation error", details: err.message });
+      return res
+        .status(400)
+        .json({ message: "Validation error", details: err.message });
     }
 
     return res.status(500).json({ message: "Server error" });
@@ -180,4 +184,3 @@ export const deleteUniversity = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-

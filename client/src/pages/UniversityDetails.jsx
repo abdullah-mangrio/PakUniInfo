@@ -2,11 +2,25 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
+import API_BASE_URL from "../config/api";
 import {
   addToShortlist,
   removeFromShortlist,
   isInShortlist,
 } from "../utils/shortlist";
+
+function buildFullLocation({ location, city, province }) {
+  const parts = [];
+
+  // prefer specific campus/area first
+  if (location && location.trim()) parts.push(location.trim());
+  if (city && city.trim()) parts.push(city.trim());
+  if (province && province.trim()) parts.push(province.trim());
+
+  if (parts.length === 0) return "Location not specified";
+  // avoid duplicates like "Karachi, Karachi"
+  return [...new Set(parts)].join(", ");
+}
 
 export default function UniversityDetails() {
   const { id } = useParams();
@@ -37,7 +51,7 @@ export default function UniversityDetails() {
     try {
       setLoading(true);
       setError("");
-      const res = await fetch(`http://localhost:5000/api/universities/${id}`);
+      const res = await fetch(`${API_BASE_URL}/api/universities/${id}`);
       if (!res.ok) {
         throw new Error(`Request failed with status ${res.status}`);
       }
@@ -61,7 +75,6 @@ export default function UniversityDetails() {
   }, [id]);
 
   const handleBack = () => {
-    // try going back; if nothing, go to explore
     if (window.history.length > 1) {
       navigate(-1);
     } else {
@@ -78,7 +91,8 @@ export default function UniversityDetails() {
       addToShortlist({
         _id: university._id,
         name: university.name,
-        location: university.location,
+        // IMPORTANT: keep something usable for listing
+        location: university.location || university.city || "",
         city: university.city,
         province: university.province,
         ranking: university.ranking,
@@ -123,8 +137,7 @@ export default function UniversityDetails() {
             padding: "0.55rem 1.4rem",
             borderRadius: "999px",
             border: "none",
-            background:
-              "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
+            background: "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
             color: "white",
             fontWeight: 600,
             fontSize: "0.9rem",
@@ -172,10 +185,7 @@ export default function UniversityDetails() {
     galleryImages,
   } = university;
 
-  const fullLocation =
-    city && province
-      ? `${city}, ${province}`
-      : location || city || "Location not specified";
+  const fullLocation = buildFullLocation({ location, city, province });
 
   const hasFees =
     typeof tuitionFeeMin === "number" || typeof tuitionFeeMax === "number";
@@ -184,9 +194,9 @@ export default function UniversityDetails() {
     const cur = tuitionFeeCurrency || "PKR";
     if (!tuitionFeeMin && !tuitionFeeMax) return "Not available";
     if (tuitionFeeMin && tuitionFeeMax) {
-      return `${cur} ${tuitionFeeMin.toLocaleString("en-PK")} – ${tuitionFeeMax.toLocaleString(
+      return `${cur} ${tuitionFeeMin.toLocaleString(
         "en-PK"
-      )} per year`;
+      )} – ${tuitionFeeMax.toLocaleString("en-PK")} per year`;
     }
     if (tuitionFeeMin) {
       return `From ${cur} ${tuitionFeeMin.toLocaleString("en-PK")} per year`;
@@ -390,11 +400,7 @@ export default function UniversityDetails() {
             </div>
 
             {/* Shortlist button */}
-            <div
-              style={{
-                alignSelf: isMobile ? "stretch" : "center",
-              }}
-            >
+            <div style={{ alignSelf: isMobile ? "stretch" : "center" }}>
               <button
                 onClick={handleToggleShortlist}
                 style={{
@@ -441,12 +447,7 @@ export default function UniversityDetails() {
         }}
       >
         {/* MAIN COLUMN */}
-        <div
-          style={{
-            display: "grid",
-            gap: "1.25rem",
-          }}
-        >
+        <div style={{ display: "grid", gap: "1.25rem" }}>
           {/* Overview */}
           <article
             style={{
@@ -503,13 +504,7 @@ export default function UniversityDetails() {
               Major programs
             </h2>
             {Array.isArray(programs) && programs.length > 0 ? (
-              <div
-                style={{
-                  display: "flex",
-                  flexWrap: "wrap",
-                  gap: "0.45rem",
-                }}
-              >
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.45rem" }}>
                 {programs.map((prog) => (
                   <span
                     key={prog}
@@ -527,13 +522,7 @@ export default function UniversityDetails() {
                 ))}
               </div>
             ) : (
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "0.9rem",
-                  color: "#6b7280",
-                }}
-              >
+              <p style={{ margin: 0, fontSize: "0.9rem", color: "#6b7280" }}>
                 Program information has not been added yet.
               </p>
             )}
@@ -572,12 +561,7 @@ export default function UniversityDetails() {
               </p>
             )}
             {Array.isArray(admissionCycles) && admissionCycles.length > 0 ? (
-              <div
-                style={{
-                  display: "grid",
-                  gap: "0.6rem",
-                }}
-              >
+              <div style={{ display: "grid", gap: "0.6rem" }}>
                 {admissionCycles.map((cycle, idx) => (
                   <div
                     key={idx}
@@ -629,7 +613,9 @@ export default function UniversityDetails() {
                       }}
                     >
                       {cycle.applicationOpenDate && (
-                        <span>Opens: {formatDate(cycle.applicationOpenDate)}</span>
+                        <span>
+                          Opens: {formatDate(cycle.applicationOpenDate)}
+                        </span>
                       )}
                       {cycle.notes && (
                         <span
@@ -646,84 +632,72 @@ export default function UniversityDetails() {
                 ))}
               </div>
             ) : (
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: "0.9rem",
-                  color: "#6b7280",
-                }}
-              >
+              <p style={{ margin: 0, fontSize: "0.9rem", color: "#6b7280" }}>
                 Admission cycle details have not been added yet.
               </p>
             )}
           </article>
 
           {/* Gallery */}
-          {Array.isArray(galleryImages) &&
-            galleryImages.length > 0 && (
-              <article
+          {Array.isArray(galleryImages) && galleryImages.length > 0 && (
+            <article
+              style={{
+                borderRadius: "1rem",
+                backgroundColor: "white",
+                border: "1px solid #e2e8f0",
+                padding: "1.1rem 1.25rem 1.2rem",
+                boxShadow: "0 12px 26px rgba(15,23,42,0.08)",
+              }}
+            >
+              <h2
                 style={{
-                  borderRadius: "1rem",
-                  backgroundColor: "white",
-                  border: "1px solid #e2e8f0",
-                  padding: "1.1rem 1.25rem 1.2rem",
-                  boxShadow: "0 12px 26px rgba(15,23,42,0.08)",
+                  margin: 0,
+                  marginBottom: "0.5rem",
+                  fontSize: "1.05rem",
+                  fontWeight: 700,
+                  color: "#0f172a",
                 }}
               >
-                <h2
-                  style={{
-                    margin: 0,
-                    marginBottom: "0.5rem",
-                    fontSize: "1.05rem",
-                    fontWeight: 700,
-                    color: "#0f172a",
-                  }}
-                >
-                  Campus snapshots
-                </h2>
-                <div
-                  style={{
-                    display: "grid",
-                    gap: "0.6rem",
-                    gridTemplateColumns: isMobile
-                      ? "minmax(0, 1fr)"
-                      : "repeat(3, minmax(0, 1fr))",
-                  }}
-                >
-                  {galleryImages.map((url, idx) => (
-                    <div
-                      key={`${url}-${idx}`}
+                Campus snapshots
+              </h2>
+              <div
+                style={{
+                  display: "grid",
+                  gap: "0.6rem",
+                  gridTemplateColumns: isMobile
+                    ? "minmax(0, 1fr)"
+                    : "repeat(3, minmax(0, 1fr))",
+                }}
+              >
+                {galleryImages.map((url, idx) => (
+                  <div
+                    key={`${url}-${idx}`}
+                    style={{
+                      borderRadius: "0.75rem",
+                      overflow: "hidden",
+                      border: "1px solid #e5e7eb",
+                      backgroundColor: "#f1f5f9",
+                    }}
+                  >
+                    <img
+                      src={url}
+                      alt={`${name} campus ${idx + 1}`}
                       style={{
-                        borderRadius: "0.75rem",
-                        overflow: "hidden",
-                        border: "1px solid #e5e7eb",
-                        backgroundColor: "#f1f5f9",
+                        width: "100%",
+                        height: 140,
+                        objectFit: "cover",
+                        display: "block",
                       }}
-                    >
-                      <img
-                        src={url}
-                        alt={`${name} campus ${idx + 1}`}
-                        style={{
-                          width: "100%",
-                          height: 140,
-                          objectFit: "cover",
-                          display: "block",
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
-              </article>
-            )}
+                    />
+                  </div>
+                ))}
+              </div>
+            </article>
+          )}
         </div>
 
         {/* SIDEBAR COLUMN */}
-        <aside
-          style={{
-            display: "grid",
-            gap: "1.1rem",
-          }}
-        >
+        <aside style={{ display: "grid", gap: "1.1rem" }}>
           {/* Quick facts */}
           <article
             style={{
@@ -751,7 +725,8 @@ export default function UniversityDetails() {
                 display: "grid",
                 rowGap: "0.45rem",
                 columnGap: "0.5rem",
-                gridTemplateColumns: "minmax(0, 1.2fr) minmax(0, 1.4fr)",
+                gridTemplateColumns:
+                  "minmax(0, 1.2fr) minmax(0, 1.4fr)",
                 fontSize: "0.86rem",
               }}
             >
@@ -830,8 +805,7 @@ export default function UniversityDetails() {
                     padding: "0.4rem 0.9rem",
                     borderRadius: "999px",
                     border: "none",
-                    background:
-                      "linear-gradient(to right, #0ea5e9, #6366f1)",
+                    background: "linear-gradient(to right, #0ea5e9, #6366f1)",
                     color: "white",
                     fontSize: "0.85rem",
                     fontWeight: 600,

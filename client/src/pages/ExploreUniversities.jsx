@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import API_BASE_URL from "../config/api";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ErrorMessage from "../components/ErrorMessage";
 import {
@@ -18,12 +19,13 @@ const PAGE_SIZE = 10;
 
 // Some example filter options – you can adjust or extend
 const PROVINCES = [
-  "Punjab",
-  "Sindh",
-  "Khyber Pakhtunkhwa",
-  "Balochistan",
-  "Islamabad Capital Territory",
+  { label: "Punjab", value: "Punjab" },
+  { label: "Sindh", value: "Sindh" },
+  { label: "Khyber Pakhtunkhwa", value: "KPK" },
+  { label: "Balochistan", value: "Balochistan" },
+  { label: "Islamabad", value: "Islamabad" },
 ];
+
 
 const CITIES = [
   "Lahore",
@@ -95,9 +97,14 @@ export default function ExploreUniversities() {
     params.set("page", page.toString());
     params.set("limit", PAGE_SIZE.toString());
 
-    if (searchName) params.set("search", searchName);
+    // ✅ FIX: backend expects "name" (not "search")
+    if (searchName) params.set("name", searchName);
+
     if (province) params.set("province", province);
-    if (city) params.set("location", city);
+
+    // ✅ FIX: use "city" (not "location") so filter works correctly
+    if (city) params.set("city", city);
+
     if (program) params.set("program", program);
 
     if (sort) {
@@ -118,7 +125,7 @@ export default function ExploreUniversities() {
         const queryString = buildQuery();
 
         const res = await fetch(
-          `http://localhost:5000/api/universities?${queryString}`
+          `${API_BASE_URL}/api/universities?${queryString}`
         );
 
         if (!res.ok) {
@@ -344,19 +351,20 @@ export default function ExploreUniversities() {
           <div style={pillContainerStyle}>
             <span style={pillLabelStyle}>Province</span>
             <select
-              value={province}
-              onChange={(e) =>
-                handleFilterChangeWrapper(setProvince)(e.target.value)
-              }
-              style={pillSelectStyle}
-            >
-              <option value="">All provinces</option>
-              {PROVINCES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
+  value={province}
+  onChange={(e) =>
+    handleFilterChangeWrapper(setProvince)(e.target.value)
+  }
+  style={pillSelectStyle}
+>
+  <option value="">All provinces</option>
+  {PROVINCES.map((p) => (
+    <option key={p.value} value={p.value}>
+      {p.label}
+    </option>
+  ))}
+</select>
+
           </div>
 
           {/* City */}

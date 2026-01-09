@@ -141,9 +141,7 @@ export default function AdminUniversities() {
   );
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -172,13 +170,10 @@ export default function AdminUniversities() {
 
       const res = await fetch(
         `http://localhost:5000/api/universities?page=1&limit=${PAGE_LIMIT}&sortBy=name&sortOrder=asc`,
-        {
-          headers: getAuthHeaders(),
-        }
+        { headers: getAuthHeaders() }
       );
 
       if (res.status === 401 || res.status === 403) {
-        // token invalid/expired
         localStorage.removeItem("adminToken");
         navigate("/admin/login");
         return;
@@ -225,14 +220,8 @@ export default function AdminUniversities() {
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!name.trim()) {
-      alert("Name is required");
-      return;
-    }
-    if (!location.trim()) {
-      alert("Location is required");
-      return;
-    }
+    if (!name.trim()) return alert("Name is required");
+    if (!location.trim()) return alert("Location is required");
 
     const payload = {
       name: name.trim(),
@@ -243,15 +232,11 @@ export default function AdminUniversities() {
       description: description.trim() || undefined,
     };
 
-    // ranking
     if (ranking.trim()) {
       const num = Number(ranking.trim());
-      if (!Number.isNaN(num)) {
-        payload.ranking = num;
-      }
+      if (!Number.isNaN(num)) payload.ranking = num;
     }
 
-    // programs
     if (programs.trim()) {
       payload.programs = programs
         .split(",")
@@ -259,7 +244,6 @@ export default function AdminUniversities() {
         .filter(Boolean);
     }
 
-    // fees
     if (tuitionFeeMin.trim()) {
       const num = Number(tuitionFeeMin.trim());
       if (!Number.isNaN(num)) payload.tuitionFeeMin = num;
@@ -268,23 +252,13 @@ export default function AdminUniversities() {
       const num = Number(tuitionFeeMax.trim());
       if (!Number.isNaN(num)) payload.tuitionFeeMax = num;
     }
-    if (tuitionFeeCurrency.trim()) {
-      payload.tuitionFeeCurrency = tuitionFeeCurrency.trim();
-    }
-    if (tuitionFeeNote.trim()) {
-      payload.tuitionFeeNote = tuitionFeeNote.trim();
-    }
+    if (tuitionFeeCurrency.trim()) payload.tuitionFeeCurrency = tuitionFeeCurrency.trim();
+    if (tuitionFeeNote.trim()) payload.tuitionFeeNote = tuitionFeeNote.trim();
 
-    // admission
-    if (admissionNotes.trim()) {
-      payload.admissionNotes = admissionNotes.trim();
-    }
+    if (admissionNotes.trim()) payload.admissionNotes = admissionNotes.trim();
     const cycles = parseAdmissionCycles(admissionCyclesRaw);
-    if (cycles) {
-      payload.admissionCycles = cycles;
-    }
+    if (cycles) payload.admissionCycles = cycles;
 
-    // images
     if (logoUrl.trim()) payload.logoUrl = logoUrl.trim();
     if (heroImageUrl.trim()) payload.heroImageUrl = heroImageUrl.trim();
     if (galleryImages.trim()) {
@@ -312,9 +286,7 @@ export default function AdminUniversities() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(
-          data.message || `Request failed with status ${res.status}`
-        );
+        throw new Error(data.message || `Request failed with status ${res.status}`);
       }
 
       await fetchUniversities();
@@ -328,19 +300,14 @@ export default function AdminUniversities() {
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this university?"
-    );
+    const confirmDelete = window.confirm("Are you sure you want to delete this university?");
     if (!confirmDelete) return;
 
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/universities/${id}`,
-        {
-          method: "DELETE",
-          headers: getAuthHeaders(),
-        }
-      );
+      const res = await fetch(`http://localhost:5000/api/universities/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
 
       if (res.status === 401 || res.status === 403) {
         localStorage.removeItem("adminToken");
@@ -350,9 +317,7 @@ export default function AdminUniversities() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(
-          data.message || `Delete failed with status ${res.status}`
-        );
+        throw new Error(data.message || `Delete failed with status ${res.status}`);
       }
 
       setUniversities((prev) => prev.filter((u) => u._id !== id));
@@ -363,7 +328,6 @@ export default function AdminUniversities() {
   };
 
   // ----- EDIT MODAL LOGIC -----
-
   const openEditModal = (uni) => {
     setEditId(uni._id);
     setEditForm({
@@ -381,10 +345,8 @@ export default function AdminUniversities() {
           ? uni.programs.join(", ")
           : "",
       description: uni.description || "",
-      tuitionFeeMin:
-        typeof uni.tuitionFeeMin === "number" ? String(uni.tuitionFeeMin) : "",
-      tuitionFeeMax:
-        typeof uni.tuitionFeeMax === "number" ? String(uni.tuitionFeeMax) : "",
+      tuitionFeeMin: typeof uni.tuitionFeeMin === "number" ? String(uni.tuitionFeeMin) : "",
+      tuitionFeeMax: typeof uni.tuitionFeeMax === "number" ? String(uni.tuitionFeeMax) : "",
       tuitionFeeCurrency: uni.tuitionFeeCurrency || "PKR",
       tuitionFeeNote: uni.tuitionFeeNote || "",
       admissionNotes: uni.admissionNotes || "",
@@ -404,24 +366,15 @@ export default function AdminUniversities() {
   };
 
   const handleEditChange = (field, value) => {
-    setEditForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setEditForm((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
     if (!editId) return;
 
-    if (!editForm.name.trim()) {
-      alert("Name is required");
-      return;
-    }
-    if (!editForm.location.trim()) {
-      alert("Location is required");
-      return;
-    }
+    if (!editForm.name.trim()) return alert("Name is required");
+    if (!editForm.location.trim()) return alert("Location is required");
 
     const payload = {
       name: editForm.name.trim(),
@@ -432,15 +385,11 @@ export default function AdminUniversities() {
       description: editForm.description.trim() || undefined,
     };
 
-    // ranking
     if (editForm.ranking.trim()) {
       const num = Number(editForm.ranking.trim());
-      if (!Number.isNaN(num)) {
-        payload.ranking = num;
-      }
+      if (!Number.isNaN(num)) payload.ranking = num;
     }
 
-    // programs
     if (editForm.programs.trim()) {
       payload.programs = editForm.programs
         .split(",")
@@ -448,79 +397,48 @@ export default function AdminUniversities() {
         .filter(Boolean);
     }
 
-    // fees
     if (editForm.tuitionFeeMin.trim()) {
       const num = Number(editForm.tuitionFeeMin.trim());
       if (!Number.isNaN(num)) payload.tuitionFeeMin = num;
-    } else {
-      payload.tuitionFeeMin = undefined;
-    }
+    } else payload.tuitionFeeMin = undefined;
 
     if (editForm.tuitionFeeMax.trim()) {
       const num = Number(editForm.tuitionFeeMax.trim());
       if (!Number.isNaN(num)) payload.tuitionFeeMax = num;
-    } else {
-      payload.tuitionFeeMax = undefined;
-    }
+    } else payload.tuitionFeeMax = undefined;
 
-    if (editForm.tuitionFeeCurrency.trim()) {
-      payload.tuitionFeeCurrency = editForm.tuitionFeeCurrency.trim();
-    } else {
-      payload.tuitionFeeCurrency = undefined;
-    }
+    if (editForm.tuitionFeeCurrency.trim()) payload.tuitionFeeCurrency = editForm.tuitionFeeCurrency.trim();
+    else payload.tuitionFeeCurrency = undefined;
 
-    if (editForm.tuitionFeeNote.trim()) {
-      payload.tuitionFeeNote = editForm.tuitionFeeNote.trim();
-    } else {
-      payload.tuitionFeeNote = undefined;
-    }
+    if (editForm.tuitionFeeNote.trim()) payload.tuitionFeeNote = editForm.tuitionFeeNote.trim();
+    else payload.tuitionFeeNote = undefined;
 
-    // admission
-    if (editForm.admissionNotes.trim()) {
-      payload.admissionNotes = editForm.admissionNotes.trim();
-    } else {
-      payload.admissionNotes = undefined;
-    }
+    if (editForm.admissionNotes.trim()) payload.admissionNotes = editForm.admissionNotes.trim();
+    else payload.admissionNotes = undefined;
 
     const cycles = parseAdmissionCycles(editForm.admissionCyclesRaw);
-    if (cycles) {
-      payload.admissionCycles = cycles;
-    } else {
-      payload.admissionCycles = [];
-    }
+    payload.admissionCycles = cycles ? cycles : [];
 
-    // images
-    if (editForm.logoUrl.trim()) {
-      payload.logoUrl = editForm.logoUrl.trim();
-    } else {
-      payload.logoUrl = undefined;
-    }
+    if (editForm.logoUrl.trim()) payload.logoUrl = editForm.logoUrl.trim();
+    else payload.logoUrl = undefined;
 
-    if (editForm.heroImageUrl.trim()) {
-      payload.heroImageUrl = editForm.heroImageUrl.trim();
-    } else {
-      payload.heroImageUrl = undefined;
-    }
+    if (editForm.heroImageUrl.trim()) payload.heroImageUrl = editForm.heroImageUrl.trim();
+    else payload.heroImageUrl = undefined;
 
     if (editForm.galleryImages.trim()) {
       payload.galleryImages = editForm.galleryImages
         .split(",")
         .map((u) => u.trim())
         .filter(Boolean);
-    } else {
-      payload.galleryImages = [];
-    }
+    } else payload.galleryImages = [];
 
     try {
       setUpdating(true);
-      const res = await fetch(
-        `http://localhost:5000/api/universities/${editId}`,
-        {
-          method: "PUT",
-          headers: getAuthHeaders(),
-          body: JSON.stringify(payload),
-        }
-      );
+      const res = await fetch(`http://localhost:5000/api/universities/${editId}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(payload),
+      });
 
       if (res.status === 401 || res.status === 403) {
         localStorage.removeItem("adminToken");
@@ -530,17 +448,11 @@ export default function AdminUniversities() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(
-          data.message || `Update failed with status ${res.status}`
-        );
+        throw new Error(data.message || `Update failed with status ${res.status}`);
       }
 
       const updated = await res.json();
-
-      setUniversities((prev) =>
-        prev.map((u) => (u._id === updated._id ? updated : u))
-      );
-
+      setUniversities((prev) => prev.map((u) => (u._id === updated._id ? updated : u)));
       closeEditModal();
     } catch (err) {
       console.error("Error updating university:", err);
@@ -559,24 +471,12 @@ export default function AdminUniversities() {
           gap: "0.4rem",
         }}
       >
-        <h1
-          style={{
-            fontSize: "1.6rem",
-            fontWeight: 700,
-            color: "#0f172a",
-          }}
-        >
+        <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#0f172a" }}>
           Admin – Manage Universities
         </h1>
-        <p
-          style={{
-            color: "#64748b",
-            fontSize: "0.95rem",
-            maxWidth: "40rem",
-          }}
-        >
-          Create, view, edit and delete universities in the PakUniInfo
-          database. This panel supports fees, admission info and images.
+        <p style={{ color: "#64748b", fontSize: "0.95rem", maxWidth: "40rem" }}>
+          Create, view, edit and delete universities in the PakUniInfo database.
+          This panel supports fees, admission info and images.
         </p>
       </header>
 
@@ -592,16 +492,25 @@ export default function AdminUniversities() {
           boxSizing: "border-box",
         }}
       >
-        <h2
-          style={{
-            fontSize: "1.05rem",
-            fontWeight: 600,
-            marginBottom: "0.8rem",
-            color: "#0f172a",
-          }}
-        >
+        <h2 style={{ fontSize: "1.05rem", fontWeight: 600, marginBottom: "0.8rem", color: "#0f172a" }}>
           Add a new university
         </h2>
+
+        {error && (
+          <div
+            style={{
+              marginBottom: "0.75rem",
+              padding: "0.6rem 0.7rem",
+              borderRadius: "0.75rem",
+              backgroundColor: "rgba(248,113,113,0.12)",
+              border: "1px solid rgba(248,113,113,0.7)",
+              fontSize: "0.85rem",
+              color: "#991b1b",
+            }}
+          >
+            {error}
+          </div>
+        )}
 
         <form
           onSubmit={handleCreate}
@@ -614,9 +523,7 @@ export default function AdminUniversities() {
           }}
         >
           {/* Name */}
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Name *</label>
             <input
               type="text"
@@ -633,9 +540,7 @@ export default function AdminUniversities() {
           </div>
 
           {/* City */}
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>City</label>
             <input
               type="text"
@@ -651,12 +556,8 @@ export default function AdminUniversities() {
           </div>
 
           {/* Province */}
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-          >
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-              Province
-            </label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Province</label>
             <input
               type="text"
               value={province}
@@ -672,12 +573,8 @@ export default function AdminUniversities() {
           </div>
 
           {/* Location */}
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-          >
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-              Location *
-            </label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Location *</label>
             <input
               type="text"
               value={location}
@@ -693,12 +590,8 @@ export default function AdminUniversities() {
           </div>
 
           {/* Ranking */}
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-          >
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-              Ranking (number)
-            </label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Ranking (number)</label>
             <input
               type="number"
               value={ranking}
@@ -713,9 +606,7 @@ export default function AdminUniversities() {
           </div>
 
           {/* Website */}
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
             <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Website</label>
             <input
               type="url"
@@ -766,9 +657,7 @@ export default function AdminUniversities() {
               gap: "0.25rem",
             }}
           >
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-              Description / overview
-            </label>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Description / overview</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -784,12 +673,8 @@ export default function AdminUniversities() {
           </div>
 
           {/* FEES */}
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-          >
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-              Fee (min, per year)
-            </label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Fee (min, per year)</label>
             <input
               type="number"
               value={tuitionFeeMin}
@@ -803,12 +688,9 @@ export default function AdminUniversities() {
               }}
             />
           </div>
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-          >
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-              Fee (max, per year)
-            </label>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Fee (max, per year)</label>
             <input
               type="number"
               value={tuitionFeeMax}
@@ -822,12 +704,9 @@ export default function AdminUniversities() {
               }}
             />
           </div>
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-          >
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-              Fee currency
-            </label>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Fee currency</label>
             <input
               type="text"
               value={tuitionFeeCurrency}
@@ -850,9 +729,7 @@ export default function AdminUniversities() {
               gap: "0.25rem",
             }}
           >
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-              Fee note (optional)
-            </label>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Fee note (optional)</label>
             <textarea
               value={tuitionFeeNote}
               onChange={(e) => setTuitionFeeNote(e.target.value)}
@@ -868,7 +745,7 @@ export default function AdminUniversities() {
             />
           </div>
 
-          {/* ADMISSION NOTES & CYCLES */}
+          {/* ADMISSION */}
           <div
             style={{
               gridColumn: "1 / -1",
@@ -877,9 +754,7 @@ export default function AdminUniversities() {
               gap: "0.25rem",
             }}
           >
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-              General admission notes
-            </label>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>General admission notes</label>
             <textarea
               value={admissionNotes}
               onChange={(e) => setAdmissionNotes(e.target.value)}
@@ -923,12 +798,8 @@ export default function AdminUniversities() {
           </div>
 
           {/* IMAGES */}
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-          >
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-              Logo URL
-            </label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Logo URL</label>
             <input
               type="url"
               value={logoUrl}
@@ -943,12 +814,8 @@ export default function AdminUniversities() {
             />
           </div>
 
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-          >
-            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-              Hero / banner image URL
-            </label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Hero / banner image URL</label>
             <input
               type="url"
               value={heroImageUrl}
@@ -1004,8 +871,7 @@ export default function AdminUniversities() {
                 padding: "0.55rem 1.4rem",
                 borderRadius: "999px",
                 border: "none",
-                background:
-                  "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
+                background: "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
                 color: "white",
                 fontWeight: 600,
                 fontSize: "0.9rem",
@@ -1022,26 +888,15 @@ export default function AdminUniversities() {
 
       {/* LIST SECTION */}
       <section>
-        <h2
-          style={{
-            fontSize: "1.1rem",
-            fontWeight: 600,
-            marginBottom: "0.6rem",
-            color: "#0f172a",
-          }}
-        >
+        <h2 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "0.6rem", color: "#0f172a" }}>
           Existing universities ({universities.length})
         </h2>
 
         {loading && (
-          <p style={{ color: "#0f172a", fontSize: "0.95rem" }}>
-            Loading universities...
-          </p>
+          <p style={{ color: "#0f172a", fontSize: "0.95rem" }}>Loading universities...</p>
         )}
 
-        {!loading && error && (
-          <p style={{ color: "crimson", fontSize: "0.95rem" }}>{error}</p>
-        )}
+        {!loading && error && <p style={{ color: "crimson", fontSize: "0.95rem" }}>{error}</p>}
 
         {!loading && !error && universities.length === 0 && (
           <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
@@ -1049,14 +904,7 @@ export default function AdminUniversities() {
           </p>
         )}
 
-        <div
-          style={{
-            marginTop: "0.75rem",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.6rem",
-          }}
-        >
+        <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
           {universities.map((uni) => {
             const hasFee =
               typeof uni.tuitionFeeMin === "number" ||
@@ -1081,33 +929,14 @@ export default function AdminUniversities() {
                 }}
               >
                 <div>
-                  <h3
-                    style={{
-                      margin: 0,
-                      marginBottom: "0.2rem",
-                      fontSize: "1rem",
-                      fontWeight: 600,
-                    }}
-                  >
+                  <h3 style={{ margin: 0, marginBottom: "0.2rem", fontSize: "1rem", fontWeight: 600 }}>
                     {uni.name}
                   </h3>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: "0.85rem",
-                      color: "#cbd5f5",
-                    }}
-                  >
+                  <p style={{ margin: 0, fontSize: "0.85rem", color: "#cbd5f5" }}>
                     {uni.city || uni.location || "Location not set"}
                     {uni.province ? `, ${uni.province}` : ""}
                   </p>
-                  <p
-                    style={{
-                      margin: "0.15rem 0 0",
-                      fontSize: "0.8rem",
-                      color: "#e5e7eb",
-                    }}
-                  >
+                  <p style={{ margin: "0.15rem 0 0", fontSize: "0.8rem", color: "#e5e7eb" }}>
                     Ranking:{" "}
                     <span style={{ fontWeight: 600 }}>
                       {uni.ranking != null ? uni.ranking : "N/A"}
@@ -1118,32 +947,16 @@ export default function AdminUniversities() {
                       : "Not set"}
                   </p>
                   {hasFee && (
-                    <p
-                      style={{
-                        margin: "0.1rem 0 0",
-                        fontSize: "0.8rem",
-                        color: "#facc15",
-                      }}
-                    >
+                    <p style={{ margin: "0.1rem 0 0", fontSize: "0.8rem", color: "#facc15" }}>
                       Fee approx: {uni.tuitionFeeCurrency || "PKR"}{" "}
-                      {uni.tuitionFeeMin
-                        ? uni.tuitionFeeMin.toLocaleString("en-PK")
-                        : "?"}
-                      {uni.tuitionFeeMax
-                        ? ` – ${uni.tuitionFeeMax.toLocaleString("en-PK")}`
-                        : ""}{" "}
+                      {uni.tuitionFeeMin ? uni.tuitionFeeMin.toLocaleString("en-PK") : "?"}
+                      {uni.tuitionFeeMax ? ` – ${uni.tuitionFeeMax.toLocaleString("en-PK")}` : ""}{" "}
                       / year
                     </p>
                   )}
                 </div>
 
-                <div
-                  style={{
-                    display: "flex",
-                    gap: "0.5rem",
-                    alignSelf: isMobile ? "stretch" : "auto",
-                  }}
-                >
+                <div style={{ display: "flex", gap: "0.5rem", alignSelf: isMobile ? "stretch" : "auto" }}>
                   <button
                     onClick={() => openEditModal(uni)}
                     style={{
@@ -1217,14 +1030,7 @@ export default function AdminUniversities() {
                 marginBottom: "0.9rem",
               }}
             >
-              <h2
-                style={{
-                  margin: 0,
-                  fontSize: "1.1rem",
-                  fontWeight: 600,
-                  color: "#0f172a",
-                }}
-              >
+              <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 600, color: "#0f172a" }}>
                 Edit university
               </h2>
               <button
@@ -1251,13 +1057,9 @@ export default function AdminUniversities() {
                   : "repeat(auto-fit, minmax(220px, 1fr))",
               }}
             >
-              {/* name, city, province, location, ranking, website, etc. */}
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-              >
-                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                  Name *
-                </label>
+              {/* Name */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Name *</label>
                 <input
                   type="text"
                   value={editForm.name}
@@ -1271,9 +1073,8 @@ export default function AdminUniversities() {
                 />
               </div>
 
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-              >
+              {/* City */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                 <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>City</label>
                 <input
                   type="text"
@@ -1288,12 +1089,9 @@ export default function AdminUniversities() {
                 />
               </div>
 
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-              >
-                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                  Province
-                </label>
+              {/* Province */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Province</label>
                 <input
                   type="text"
                   value={editForm.province}
@@ -1307,18 +1105,13 @@ export default function AdminUniversities() {
                 />
               </div>
 
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-              >
-                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                  Location *
-                </label>
+              {/* Location */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Location *</label>
                 <input
                   type="text"
                   value={editForm.location}
-                  onChange={(e) =>
-                    handleEditChange("location", e.target.value)
-                  }
+                  onChange={(e) => handleEditChange("location", e.target.value)}
                   style={{
                     padding: "0.5rem 0.7rem",
                     borderRadius: "0.5rem",
@@ -1328,18 +1121,13 @@ export default function AdminUniversities() {
                 />
               </div>
 
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-              >
-                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                  Ranking
-                </label>
+              {/* Ranking */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Ranking</label>
                 <input
                   type="number"
                   value={editForm.ranking}
-                  onChange={(e) =>
-                    handleEditChange("ranking", e.target.value)
-                  }
+                  onChange={(e) => handleEditChange("ranking", e.target.value)}
                   style={{
                     padding: "0.5rem 0.7rem",
                     borderRadius: "0.5rem",
@@ -1349,18 +1137,13 @@ export default function AdminUniversities() {
                 />
               </div>
 
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-              >
-                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                  Website
-                </label>
+              {/* Website */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Website</label>
                 <input
                   type="url"
                   value={editForm.website}
-                  onChange={(e) =>
-                    handleEditChange("website", e.target.value)
-                  }
+                  onChange={(e) => handleEditChange("website", e.target.value)}
                   style={{
                     padding: "0.5rem 0.7rem",
                     borderRadius: "0.5rem",
@@ -1385,9 +1168,7 @@ export default function AdminUniversities() {
                 <input
                   type="text"
                   value={editForm.programs}
-                  onChange={(e) =>
-                    handleEditChange("programs", e.target.value)
-                  }
+                  onChange={(e) => handleEditChange("programs", e.target.value)}
                   style={{
                     padding: "0.5rem 0.7rem",
                     borderRadius: "0.5rem",
@@ -1406,14 +1187,10 @@ export default function AdminUniversities() {
                   gap: "0.25rem",
                 }}
               >
-                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                  Description
-                </label>
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Description</label>
                 <textarea
                   value={editForm.description}
-                  onChange={(e) =>
-                    handleEditChange("description", e.target.value)
-                  }
+                  onChange={(e) => handleEditChange("description", e.target.value)}
                   rows={3}
                   style={{
                     padding: "0.5rem 0.7rem",
@@ -1426,18 +1203,12 @@ export default function AdminUniversities() {
               </div>
 
               {/* Fees */}
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-              >
-                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                  Fee (min)
-                </label>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Fee (min)</label>
                 <input
                   type="number"
                   value={editForm.tuitionFeeMin}
-                  onChange={(e) =>
-                    handleEditChange("tuitionFeeMin", e.target.value)
-                  }
+                  onChange={(e) => handleEditChange("tuitionFeeMin", e.target.value)}
                   style={{
                     padding: "0.5rem 0.7rem",
                     borderRadius: "0.5rem",
@@ -1446,18 +1217,13 @@ export default function AdminUniversities() {
                   }}
                 />
               </div>
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-              >
-                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                  Fee (max)
-                </label>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Fee (max)</label>
                 <input
                   type="number"
                   value={editForm.tuitionFeeMax}
-                  onChange={(e) =>
-                    handleEditChange("tuitionFeeMax", e.target.value)
-                  }
+                  onChange={(e) => handleEditChange("tuitionFeeMax", e.target.value)}
                   style={{
                     padding: "0.5rem 0.7rem",
                     borderRadius: "0.5rem",
@@ -1466,18 +1232,13 @@ export default function AdminUniversities() {
                   }}
                 />
               </div>
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-              >
-                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                  Fee currency
-                </label>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Fee currency</label>
                 <input
                   type="text"
                   value={editForm.tuitionFeeCurrency}
-                  onChange={(e) =>
-                    handleEditChange("tuitionFeeCurrency", e.target.value)
-                  }
+                  onChange={(e) => handleEditChange("tuitionFeeCurrency", e.target.value)}
                   style={{
                     padding: "0.5rem 0.7rem",
                     borderRadius: "0.5rem",
@@ -1495,14 +1256,10 @@ export default function AdminUniversities() {
                   gap: "0.25rem",
                 }}
               >
-                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                  Fee note
-                </label>
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Fee note</label>
                 <textarea
                   value={editForm.tuitionFeeNote}
-                  onChange={(e) =>
-                    handleEditChange("tuitionFeeNote", e.target.value)
-                  }
+                  onChange={(e) => handleEditChange("tuitionFeeNote", e.target.value)}
                   rows={2}
                   style={{
                     padding: "0.5rem 0.7rem",
@@ -1514,7 +1271,7 @@ export default function AdminUniversities() {
                 />
               </div>
 
-              {/* Admission notes & cycles */}
+              {/* Admission */}
               <div
                 style={{
                   gridColumn: "1 / -1",
@@ -1528,9 +1285,7 @@ export default function AdminUniversities() {
                 </label>
                 <textarea
                   value={editForm.admissionNotes}
-                  onChange={(e) =>
-                    handleEditChange("admissionNotes", e.target.value)
-                  }
+                  onChange={(e) => handleEditChange("admissionNotes", e.target.value)}
                   rows={2}
                   style={{
                     padding: "0.5rem 0.7rem",
@@ -1555,9 +1310,7 @@ export default function AdminUniversities() {
                 </label>
                 <textarea
                   value={editForm.admissionCyclesRaw}
-                  onChange={(e) =>
-                    handleEditChange("admissionCyclesRaw", e.target.value)
-                  }
+                  onChange={(e) => handleEditChange("admissionCyclesRaw", e.target.value)}
                   rows={4}
                   style={{
                     padding: "0.5rem 0.7rem",
@@ -1571,18 +1324,12 @@ export default function AdminUniversities() {
               </div>
 
               {/* Images */}
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-              >
-                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                  Logo URL
-                </label>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Logo URL</label>
                 <input
                   type="url"
                   value={editForm.logoUrl}
-                  onChange={(e) =>
-                    handleEditChange("logoUrl", e.target.value)
-                  }
+                  onChange={(e) => handleEditChange("logoUrl", e.target.value)}
                   style={{
                     padding: "0.5rem 0.7rem",
                     borderRadius: "0.5rem",
@@ -1592,18 +1339,12 @@ export default function AdminUniversities() {
                 />
               </div>
 
-              <div
-                style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}
-              >
-                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                  Hero image URL
-                </label>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+                <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>Hero image URL</label>
                 <input
                   type="url"
                   value={editForm.heroImageUrl}
-                  onChange={(e) =>
-                    handleEditChange("heroImageUrl", e.target.value)
-                  }
+                  onChange={(e) => handleEditChange("heroImageUrl", e.target.value)}
                   style={{
                     padding: "0.5rem 0.7rem",
                     borderRadius: "0.5rem",
@@ -1627,9 +1368,7 @@ export default function AdminUniversities() {
                 <input
                   type="text"
                   value={editForm.galleryImages}
-                  onChange={(e) =>
-                    handleEditChange("galleryImages", e.target.value)
-                  }
+                  onChange={(e) => handleEditChange("galleryImages", e.target.value)}
                   style={{
                     padding: "0.5rem 0.7rem",
                     borderRadius: "0.5rem",
@@ -1673,8 +1412,7 @@ export default function AdminUniversities() {
                     padding: "0.5rem 1.4rem",
                     borderRadius: "999px",
                     border: "none",
-                    background:
-                      "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
+                    background: "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
                     color: "white",
                     fontWeight: 600,
                     fontSize: "0.9rem",

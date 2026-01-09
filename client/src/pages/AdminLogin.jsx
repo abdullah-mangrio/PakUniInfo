@@ -1,6 +1,7 @@
 // client/src/pages/AdminLogin.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import API_BASE_URL from "../config/api";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -39,7 +40,7 @@ export default function AdminLogin() {
 
     try {
       setSubmitting(true);
-      const res = await fetch("http://localhost:5000/api/admin/login", {
+      const res = await fetch(`${API_BASE_URL}/api/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password: password.trim() }),

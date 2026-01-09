@@ -1,9 +1,37 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-const PROVINCES = ["Any", "Punjab", "Sindh", "KPK", "Balochistan", "Islamabad"];
-const CITIES = ["Any", "Karachi", "Lahore", "Islamabad", "Peshawar", "Quetta"];
-const PROGRAMS = ["Any", "BSCS", "BSEE", "BSIT", "BBA", "MBBS"];
+const PROVINCES = [
+  { label: "Any", value: "Any" },
+  { label: "Punjab", value: "Punjab" },
+  { label: "Sindh", value: "Sindh" },
+  { label: "Khyber Pakhtunkhwa", value: "KPK" },
+  { label: "Balochistan", value: "Balochistan" },
+  { label: "Islamabad", value: "Islamabad" },
+];
+
+const CITIES = [
+  "Lahore",
+  "Karachi",
+  "Islamabad",
+  "Rawalpindi",
+  "Peshawar",
+  "Quetta",
+  "Faisalabad",
+  "Multan",
+];
+const PROGRAMS = [
+  "BSCS",
+  "BSSE",
+  "BSIT",
+  "BBA",
+  "MBBS",
+  "BDS",
+  "PharmD",
+  "LLB",
+  "BS Psychology",
+  "BS Economics",
+];
 
 export default function Guidance() {
   const navigate = useNavigate();
@@ -13,9 +41,7 @@ export default function Guidance() {
   );
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
@@ -35,17 +61,19 @@ export default function Guidance() {
     setLoading(true);
     setError("");
     setRecommendations([]);
+    setExplanation("");
 
     try {
       const params = new URLSearchParams();
-
       params.set("page", "1");
       params.set("limit", "20");
 
+      // ✅ backend filters: province, city, program
       if (province !== "Any") params.set("province", province);
-      if (city !== "Any") params.set("location", city);
+      if (city !== "Any") params.set("city", city);
       if (program !== "Any") params.set("program", program);
 
+      // sorting rules based on marks
       if (marksBand === "high") {
         params.set("sortBy", "ranking");
         params.set("sortOrder", "asc");
@@ -61,44 +89,27 @@ export default function Guidance() {
         `http://localhost:5000/api/universities?${params.toString()}`
       );
 
-      if (!res.ok) {
-        throw new Error(`Request failed with status ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
 
       const data = await res.json();
-      const results = data.results || data || [];
+      const results = data.results || [];
 
       const sliced = results.slice(0, 6);
       setRecommendations(sliced);
 
+      // explanation
       let reason = "Based on your answers, we looked for universities ";
       const parts = [];
 
-      if (program !== "Any") {
-        parts.push(`offering **${program}** or similar programs`);
-      }
-      if (city !== "Any") {
-        parts.push(`in **${city}**`);
-      } else if (province !== "Any") {
-        parts.push(`in **${province}** province`);
-      }
+      if (program !== "Any") parts.push(`offering **${program}** or similar programs`);
+      if (city !== "Any") parts.push(`in **${city}**`);
+      else if (province !== "Any") parts.push(`in **${province}** province`);
 
-      if (marksBand === "high") {
-        parts.push("with **higher rankings** (you selected high marks)");
-      } else if (marksBand === "medium") {
-        parts.push("with **balanced rankings** (you selected medium marks)");
-      } else {
-        parts.push(
-          "with a **wider spread of options** (you selected low/average marks)"
-        );
-      }
+      if (marksBand === "high") parts.push("with **higher rankings** (you selected high marks)");
+      else if (marksBand === "medium") parts.push("with **balanced rankings** (you selected medium marks)");
+      else parts.push("with a **wider spread of options** (you selected low/average marks)");
 
-      if (parts.length > 0) {
-        reason += parts.join(", ") + ".";
-      } else {
-        reason += "across Pakistan.";
-      }
-
+      reason += parts.length ? parts.join(", ") + "." : "across Pakistan.";
       setExplanation(reason);
     } catch (err) {
       console.error("Error fetching recommendations:", err);
@@ -140,8 +151,7 @@ export default function Guidance() {
         </h1>
         <p style={{ color: "#64748b", fontSize: "0.95rem" }}>
           Answer a few quick questions and we&apos;ll suggest universities that
-          roughly match your location, program interest, and marks. In the
-          future this flow can be powered by a real AI advisor.
+          roughly match your location, program interest, and marks.
         </p>
       </header>
 
@@ -172,21 +182,22 @@ export default function Guidance() {
               Preferred province
             </label>
             <select
-              value={province}
-              onChange={(e) => setProvince(e.target.value)}
-              style={{
-                padding: "0.55rem 0.7rem",
-                borderRadius: "0.5rem",
-                border: "1px solid #cbd5f5",
-                fontSize: "0.9rem",
-              }}
-            >
-              {PROVINCES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
+  value={province}
+  onChange={(e) => setProvince(e.target.value)}
+  style={{
+    padding: "0.55rem 0.7rem",
+    borderRadius: "0.5rem",
+    border: "1px solid #cbd5f5",
+    fontSize: "0.9rem",
+  }}
+>
+  {PROVINCES.map((p) => (
+    <option key={p.value} value={p.value}>
+      {p.label}
+    </option>
+  ))}
+</select>
+
           </div>
 
           {/* City */}
@@ -247,16 +258,10 @@ export default function Guidance() {
             <label style={{ fontSize: "0.85rem", fontWeight: 500 }}>
               Your marks (overall)
             </label>
-            <p
-              style={{
-                margin: 0,
-                fontSize: "0.85rem",
-                color: "#64748b",
-              }}
-            >
-              This doesn&apos;t have to be perfect — it&apos;s just to roughly
-              guide how selective the recommendations should be.
+            <p style={{ margin: 0, fontSize: "0.85rem", color: "#64748b" }}>
+              Rough guidance only — to adjust how selective recommendations should be.
             </p>
+
             <div
               style={{
                 display: "flex",
@@ -275,6 +280,7 @@ export default function Guidance() {
                 />
                 85% or above / A grade
               </label>
+
               <label style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
                 <input
                   type="radio"
@@ -285,6 +291,7 @@ export default function Guidance() {
                 />
                 Around 70% – 85%
               </label>
+
               <label style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
                 <input
                   type="radio"
@@ -298,7 +305,7 @@ export default function Guidance() {
             </div>
           </div>
 
-          {/* Submit buttons – TWEAKED FOR MOBILE */}
+          {/* Buttons */}
           <div
             style={{
               gridColumn: "1 / -1",
@@ -325,6 +332,7 @@ export default function Guidance() {
             >
               Browse manually instead
             </button>
+
             <button
               type="submit"
               disabled={loading}
@@ -332,8 +340,7 @@ export default function Guidance() {
                 padding: isMobile ? "0.45rem 1.1rem" : "0.55rem 1.4rem",
                 borderRadius: "999px",
                 border: "none",
-                background:
-                  "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
+                background: "linear-gradient(to right, #0f766e, #22c55e, #4ade80)",
                 color: "white",
                 fontWeight: 600,
                 fontSize: isMobile ? "0.85rem" : "0.9rem",
@@ -349,29 +356,15 @@ export default function Guidance() {
       </section>
 
       {/* RESULTS */}
-      {error && (
-        <p style={{ color: "crimson", fontSize: "0.95rem" }}>{error}</p>
-      )}
+      {error && <p style={{ color: "crimson", fontSize: "0.95rem" }}>{error}</p>}
 
       {!loading && !error && recommendations.length > 0 && (
         <section>
-          <p
-            style={{
-              fontSize: "0.9rem",
-              color: "#475569",
-              marginBottom: "0.9rem",
-            }}
-          >
+          <p style={{ fontSize: "0.9rem", color: "#475569", marginBottom: "0.9rem" }}>
             {explanation}
           </p>
 
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "0.8rem",
-            }}
-          >
+          <div style={{ display: "flex", flexDirection: "column", gap: "0.8rem" }}>
             {recommendations.map((uni) => (
               <article
                 key={uni._id}
@@ -384,43 +377,19 @@ export default function Guidance() {
                   border: "1px solid rgba(148, 163, 184, 0.45)",
                 }}
               >
-                <h2
-                  style={{
-                    margin: 0,
-                    marginBottom: "0.2rem",
-                    fontSize: "1.05rem",
-                    fontWeight: 700,
-                  }}
-                >
+                <h2 style={{ margin: 0, marginBottom: "0.2rem", fontSize: "1.05rem", fontWeight: 700 }}>
                   {uni.name}
                 </h2>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "0.9rem",
-                    color: "#cbd5f5",
-                  }}
-                >
-                  {uni.location || uni.city || "Location not specified"}
-                  {uni.province ? `, ${uni.province}` : ""}
+
+                <p style={{ margin: 0, fontSize: "0.9rem", color: "#cbd5f5" }}>
+                  {(uni.city || uni.location || "Location not specified")}{uni.province ? `, ${uni.province}` : ""}
                 </p>
-                <p
-                  style={{
-                    margin: "0.2rem 0",
-                    fontSize: "0.88rem",
-                  }}
-                >
-                  Ranking:{" "}
-                  <span style={{ fontWeight: 600 }}>
-                    {uni.ranking != null ? `#${uni.ranking}` : "N/A"}
-                  </span>
+
+                <p style={{ margin: "0.2rem 0", fontSize: "0.88rem" }}>
+                  Ranking: <span style={{ fontWeight: 600 }}>{uni.ranking != null ? `#${uni.ranking}` : "N/A"}</span>
                 </p>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "0.88rem",
-                  }}
-                >
+
+                <p style={{ margin: 0, fontSize: "0.88rem" }}>
                   Programs:{" "}
                   {Array.isArray(uni.programs) && uni.programs.length > 0
                     ? uni.programs.join(", ")
@@ -434,8 +403,7 @@ export default function Guidance() {
 
       {!loading && !error && recommendations.length === 0 && (
         <p style={{ color: "#64748b", fontSize: "0.9rem" }}>
-          Fill the form above and click &quot;Get recommendations&quot; to see
-          suggested universities.
+          Fill the form above and click &quot;Get recommendations&quot; to see suggested universities.
         </p>
       )}
     </div>
