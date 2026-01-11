@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import  API_BASE_URL  from "../config/api"; // ✅ use deployed backend base
 
 const PROVINCES = [
   { label: "Any", value: "Any" },
@@ -11,6 +12,7 @@ const PROVINCES = [
 ];
 
 const CITIES = [
+  "Any", // ✅ added
   "Lahore",
   "Karachi",
   "Islamabad",
@@ -20,7 +22,9 @@ const CITIES = [
   "Faisalabad",
   "Multan",
 ];
+
 const PROGRAMS = [
+  "Any", // ✅ added (optional but consistent)
   "BSCS",
   "BSSE",
   "BSIT",
@@ -85,9 +89,9 @@ export default function Guidance() {
         params.set("sortOrder", "asc");
       }
 
-      const res = await fetch(
-        `http://localhost:5000/api/universities?${params.toString()}`
-      );
+      // ✅ IMPORTANT: use deployed backend URL, not localhost
+      const url = `${API_BASE_URL}/api/universities?${params.toString()}`;
+      const res = await fetch(url);
 
       if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
 
@@ -182,22 +186,21 @@ export default function Guidance() {
               Preferred province
             </label>
             <select
-  value={province}
-  onChange={(e) => setProvince(e.target.value)}
-  style={{
-    padding: "0.55rem 0.7rem",
-    borderRadius: "0.5rem",
-    border: "1px solid #cbd5f5",
-    fontSize: "0.9rem",
-  }}
->
-  {PROVINCES.map((p) => (
-    <option key={p.value} value={p.value}>
-      {p.label}
-    </option>
-  ))}
-</select>
-
+              value={province}
+              onChange={(e) => setProvince(e.target.value)}
+              style={{
+                padding: "0.55rem 0.7rem",
+                borderRadius: "0.5rem",
+                border: "1px solid #cbd5f5",
+                fontSize: "0.9rem",
+              }}
+            >
+              {PROVINCES.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* City */}
@@ -382,7 +385,8 @@ export default function Guidance() {
                 </h2>
 
                 <p style={{ margin: 0, fontSize: "0.9rem", color: "#cbd5f5" }}>
-                  {(uni.city || uni.location || "Location not specified")}{uni.province ? `, ${uni.province}` : ""}
+                  {(uni.city || uni.location || "Location not specified")}
+                  {uni.province ? `, ${uni.province}` : ""}
                 </p>
 
                 <p style={{ margin: "0.2rem 0", fontSize: "0.88rem" }}>
