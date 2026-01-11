@@ -2,11 +2,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import jwt from "jsonwebtoken";
 import { connectDB } from "./config.js";
 import universityRoutes from "./routes/universityRoutes.js";
-import University from "./models/University.js";
-
 import adminRoutes from "./routes/adminRoutes.js";
 
 dotenv.config();
@@ -14,10 +11,31 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
+// ---------- Middleware ----------
 app.use(express.json());
-app.use(cors());
 
-app.use("/api/admin", adminRoutes);
+// CORS (deploy-friendly)
+const allowedOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // allow server-to-server / Postman / curl (no origin)
+      if (!origin) return callback(null, true);
+
+      // If no CORS_ORIGIN set, allow all (easy during early deploy)
+      if (allowedOrigins.length === 0) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 
 // ======= DEBUG: see every incoming request path/method =======
 app.use((req, res, next) => {
@@ -26,67 +44,26 @@ app.use((req, res, next) => {
 });
 // ============================================================
 
-// ============== INLINE ADMIN LOGIN ROUTE ====================
-app.post("/api/admin/login", (req, res) => {
-  const { email, password } = req.body || {};
-
-  console.log("LOGIN BODY:", email, password);
-  console.log("ENV EMAIL:", process.env.ADMIN_EMAIL);
-  console.log("ENV PASS:", process.env.ADMIN_PASSWORD);
-  console.log("JWT_SECRET set:", !!process.env.JWT_SECRET);
-
-  const envEmail = (process.env.ADMIN_EMAIL || "").trim().toLowerCase();
-  const envPassword = (process.env.ADMIN_PASSWORD || "").trim();
-  const inputEmail = (email || "").trim().toLowerCase();
-  const inputPassword = (password || "").trim();
-
-  if (!envEmail || !envPassword || !process.env.JWT_SECRET) {
-    return res
-      .status(500)
-      .json({ message: "Admin credentials or JWT secret not configured" });
-  }
-
-  if (inputEmail !== envEmail || inputPassword !== envPassword) {
-    return res.status(401).json({ message: "Invalid admin credentials" });
-  }
-
-  const token = jwt.sign(
-    { email: envEmail, role: "admin" },
-    process.env.JWT_SECRET,
-    { expiresIn: "7d" }
-  );
-
-  return res.json({ token });
-});
-// ============================================================
-
-// University routes
+// ---------- Routes ----------
+app.use("/api/admin", adminRoutes);
 app.use("/api/universities", universityRoutes);
 
-// (Optional) sample route for testing
-app.get("/add-sample", async (req, res) => {
-  try {
-    const sampleUni = new University({
-      name: "FAST NUCES",
-      city: "Peshawar",
-      ranking: 1,
-      programs: ["BSCS", "BSEE", "BSIT"],
-    });
-
-    await sampleUni.save();
-    res.send("Sample university added successfully!");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error adding sample university");
-  }
-});
-
+// Health check
 app.get("/", (req, res) => {
   res.send("PakUniInfo backend is running successfully!");
 });
 
-connectDB();
+// ---------- Start server AFTER DB connect ----------
+const start = async () => {
+  try {
+    await connectDB();
+    app.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+    });
+  } catch (err) {
+    console.error("Failed to start server:", err);
+    process.exit(1);
+  }
+};
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
-});
+start();
