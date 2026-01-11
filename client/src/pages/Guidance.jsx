@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import  API_BASE_URL  from "../config/api"; // ✅ use deployed backend base
+import API_BASE_URL from "../config/api"; // ✅ default export
 
 const PROVINCES = [
   { label: "Any", value: "Any" },
@@ -24,7 +24,7 @@ const CITIES = [
 ];
 
 const PROGRAMS = [
-  "Any", // ✅ added (optional but consistent)
+  "Any", // ✅ added (consistent)
   "BSCS",
   "BSSE",
   "BSIT",
@@ -70,9 +70,9 @@ export default function Guidance() {
     try {
       const params = new URLSearchParams();
       params.set("page", "1");
-      params.set("limit", "20");
+      params.set("limit", "10"); // ✅ lighter for mobile
 
-      // ✅ backend filters: province, city, program
+      // backend filters: province, city, program
       if (province !== "Any") params.set("province", province);
       if (city !== "Any") params.set("city", city);
       if (program !== "Any") params.set("program", program);
@@ -89,11 +89,22 @@ export default function Guidance() {
         params.set("sortOrder", "asc");
       }
 
-      // ✅ IMPORTANT: use deployed backend URL, not localhost
       const url = `${API_BASE_URL}/api/universities?${params.toString()}`;
-      const res = await fetch(url);
 
-      if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
+      // ✅ timeout controller (prevents infinite hang on mobile / cold starts)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s
+
+      let res;
+      try {
+        res = await fetch(url, { signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
+
+      if (!res.ok) {
+        throw new Error(`Request failed with status ${res.status}`);
+      }
 
       const data = await res.json();
       const results = data.results || [];
@@ -117,7 +128,11 @@ export default function Guidance() {
       setExplanation(reason);
     } catch (err) {
       console.error("Error fetching recommendations:", err);
-      setError(err.message || "Failed to fetch recommendations.");
+      if (err?.name === "AbortError") {
+        setError("Request timed out (mobile network / server cold start). Please try again.");
+      } else {
+        setError(err?.message || "Failed to fetch recommendations.");
+      }
     } finally {
       setLoading(false);
     }
