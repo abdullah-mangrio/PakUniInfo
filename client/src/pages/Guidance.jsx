@@ -93,7 +93,7 @@ export default function Guidance() {
 
       // ✅ timeout controller (prevents infinite hang on mobile / cold starts)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 45000); // 15s
+      const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s
 
       let res;
       try {
@@ -367,7 +367,7 @@ export default function Guidance() {
                 whiteSpace: "nowrap",
               }}
             >
-              {loading ? "waking up server...finding universities" : "Get recommendations"}
+              {loading ? "Finding Universities..." : "Get recommendations"}
             </button>
           </div>
         </form>
