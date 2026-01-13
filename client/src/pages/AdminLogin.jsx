@@ -38,20 +38,27 @@ export default function AdminLogin() {
       return;
     }
 
+    // ✅ Timeout protection
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s
+
     try {
       setSubmitting(true);
+
       const res = await fetch(`${API_BASE_URL}/api/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.trim(), password: password.trim() }),
+        signal: controller.signal,
       });
 
+      // Try read JSON if possible, otherwise keep empty
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
         throw new Error(data.message || "Login failed. Check your details.");
       }
 
-      const data = await res.json();
       if (!data.token) {
         throw new Error("Login response did not contain a token.");
       }
@@ -60,8 +67,22 @@ export default function AdminLogin() {
       navigate("/admin/universities");
     } catch (err) {
       console.error("Admin login error:", err);
-      setError(err.message || "Unable to login right now.");
+
+      if (err?.name === "AbortError") {
+        setError("Server is waking up or your network is slow. Please retry.");
+      } else if (
+        String(err?.message || "")
+          .toLowerCase()
+          .includes("failed to fetch")
+      ) {
+        setError(
+          "Couldn’t reach the server. Please check your connection and try again."
+        );
+      } else {
+        setError(err?.message || "Unable to login right now.");
+      }
     } finally {
+      clearTimeout(timeoutId);
       setSubmitting(false);
     }
   };
