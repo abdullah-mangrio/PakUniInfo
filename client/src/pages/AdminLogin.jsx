@@ -221,17 +221,7 @@ export default function AdminLogin() {
           </div>
 
           {/* Helper note */}
-          <p
-            style={{
-              margin: "0.2rem 0 0.4rem",
-              fontSize: "0.78rem",
-              color: "#9ca3af",
-            }}
-          >
-            If you&apos;re testing locally, make sure the backend is running and
-            that <code style={{ fontSize: "0.78rem" }}>.env</code> has the same
-            admin email &amp; password as you type here.
-          </p>
+          
 
           {/* Buttons */}
           <div
