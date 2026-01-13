@@ -52,6 +52,7 @@ export default function About() {
           A small project to make university search less confusing.
         </h1>
 
+        {/* ✅ UPDATED PARAGRAPH (combined + better) */}
         <p
           style={{
             fontSize: "0.98rem",
@@ -60,10 +61,13 @@ export default function About() {
             marginBottom: "1rem",
           }}
         >
-          PakUniInfo is a personal project built to help students, parents, and
-          teachers quickly explore universities across Pakistan. Instead of
-          jumping between dozens of tabs and websites, you can search, filter,
-          and review key information in one place.
+          PakUniInfo started when I, Abdullah Mangrio, was doing my own
+          university research. I found great platforms for exploring
+          international universities in depth — but nothing similar that could
+          help Pakistani students in one place. So I decided to apply my field
+          learning and build a simple tool where students, parents, and teachers
+          can search, filter, compare, and review key university information
+          without jumping between dozens of tabs.
         </p>
 
         <p

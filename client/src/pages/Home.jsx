@@ -218,7 +218,7 @@ export default function Home() {
               color: "#cbd5f5",
             }}
           >
-            Future roadmap: richer data (fees, admission), smarter AI guidance,
+            Future roadmap: richer data (fees, admission), smarter AI Integrated guidance,
             and auto-updated information for students across Pakistan.
           </p>
         </aside>
