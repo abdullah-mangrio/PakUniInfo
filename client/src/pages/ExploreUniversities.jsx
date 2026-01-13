@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import API_BASE_URL from "../config/api";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -25,7 +25,6 @@ const PROVINCES = [
   { label: "Balochistan", value: "Balochistan" },
   { label: "Islamabad", value: "Islamabad" },
 ];
-
 
 const CITIES = [
   "Lahore",
@@ -75,11 +74,7 @@ export default function ExploreUniversities() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsMobile(true);
-      } else {
-        setIsMobile(false);
-      }
+      setIsMobile(window.innerWidth < 768);
     };
 
     window.addEventListener("resize", handleResize);
@@ -91,18 +86,18 @@ export default function ExploreUniversities() {
   const [compareTick, setCompareTick] = useState(0);
 
   // Build query string based on filters
-  const buildQuery = () => {
+  const buildQuery = useCallback(() => {
     const params = new URLSearchParams();
 
     params.set("page", page.toString());
     params.set("limit", PAGE_SIZE.toString());
 
-    // ✅ FIX: backend expects "name" (not "search")
+    // ✅ backend expects "name"
     if (searchName) params.set("name", searchName);
 
     if (province) params.set("province", province);
 
-    // ✅ FIX: use "city" (not "location") so filter works correctly
+    // ✅ use "city"
     if (city) params.set("city", city);
 
     if (program) params.set("program", program);
@@ -114,39 +109,51 @@ export default function ExploreUniversities() {
     }
 
     return params.toString();
-  };
+  }, [page, searchName, province, city, program, sort]);
+
+  // ✅ Extracted fetch function so we can reuse for Retry
+  const fetchUniversities = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    const queryString = buildQuery();
+
+    // ✅ Timeout protection (prevents infinite loading)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000); // 20s
+
+    try {
+      const res = await fetch(
+        `${API_BASE_URL}/api/universities?${queryString}`,
+        { signal: controller.signal }
+      );
+
+      if (!res.ok) {
+        throw new Error(`Request failed with status ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // Backend returns: { currentPage, totalPages, totalResults, results: [] }
+      setUniversities(data.results || []);
+      setTotalPages(data.totalPages || 1);
+    } catch (err) {
+      console.error("Error fetching universities:", err);
+
+      if (err?.name === "AbortError") {
+        setError("Server is waking up or your network is slow. Please retry.");
+      } else {
+        setError(err?.message || "Failed to fetch universities.");
+      }
+    } finally {
+      clearTimeout(timeoutId);
+      setLoading(false);
+    }
+  }, [buildQuery]);
 
   useEffect(() => {
-    const fetchUniversities = async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const queryString = buildQuery();
-
-        const res = await fetch(
-          `${API_BASE_URL}/api/universities?${queryString}`
-        );
-
-        if (!res.ok) {
-          throw new Error(`Request failed with status ${res.status}`);
-        }
-
-        const data = await res.json();
-
-        setUniversities(data.results || []);
-        setTotalPages(data.totalPages || 1);
-      } catch (err) {
-        console.error("Error fetching universities:", err);
-        setError(err.message || "Failed to fetch");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUniversities();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, searchName, province, city, program, sort]);
+  }, [fetchUniversities]);
 
   const handlePrev = () => {
     setPage((p) => Math.max(1, p - 1));
@@ -231,7 +238,7 @@ export default function ExploreUniversities() {
     gap: "0.4rem",
     flexDirection: isMobile ? "column" : "row",
     width: isMobile ? "100%" : "auto",
-    boxSizing: "border-box", // ✅ prevent overflow
+    boxSizing: "border-box",
   };
 
   const pillLabelStyle = {
@@ -351,20 +358,19 @@ export default function ExploreUniversities() {
           <div style={pillContainerStyle}>
             <span style={pillLabelStyle}>Province</span>
             <select
-  value={province}
-  onChange={(e) =>
-    handleFilterChangeWrapper(setProvince)(e.target.value)
-  }
-  style={pillSelectStyle}
->
-  <option value="">All provinces</option>
-  {PROVINCES.map((p) => (
-    <option key={p.value} value={p.value}>
-      {p.label}
-    </option>
-  ))}
-</select>
-
+              value={province}
+              onChange={(e) =>
+                handleFilterChangeWrapper(setProvince)(e.target.value)
+              }
+              style={pillSelectStyle}
+            >
+              <option value="">All provinces</option>
+              {PROVINCES.map((p) => (
+                <option key={p.value} value={p.value}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* City */}
@@ -434,7 +440,7 @@ export default function ExploreUniversities() {
               cursor: "pointer",
               width: isMobile ? "100%" : "auto",
               textAlign: "center",
-              boxSizing: "border-box", // ✅ no overflow
+              boxSizing: "border-box",
             }}
           >
             Clear filters
@@ -456,7 +462,7 @@ export default function ExploreUniversities() {
               boxShadow: "0 10px 24px rgba(16, 185, 129, 0.55)",
               width: isMobile ? "100%" : "auto",
               textAlign: "center",
-              boxSizing: "border-box", // ✅ no overflow
+              boxSizing: "border-box",
             }}
           >
             Open compare view
@@ -472,7 +478,22 @@ export default function ExploreUniversities() {
 
         {!loading && error && (
           <div style={{ marginTop: "1.2rem" }}>
-            <ErrorMessage message="We couldn’t load universities right now. Please try again in a moment." />
+            <ErrorMessage message={error} />
+            <div style={{ marginTop: "0.8rem" }}>
+              <button
+                onClick={fetchUniversities}
+                style={{
+                  padding: "0.45rem 1rem",
+                  borderRadius: "999px",
+                  border: "1px solid #cbd5f5",
+                  backgroundColor: "white",
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                }}
+              >
+                Retry
+              </button>
+            </div>
           </div>
         )}
 
@@ -633,62 +654,61 @@ export default function ExploreUniversities() {
             })}
 
             {/* PAGINATION */}
-            {!loading && !error && universities.length > 0 && (
-              <div
-                style={{
-                  marginTop: "1.6rem",
-                  display: "flex",
-                  flexDirection: isMobile ? "column" : "row",
-                  gap: isMobile ? "0.75rem" : 0,
-                  justifyContent: isMobile
-                    ? "flex-start"
-                    : "space-between",
-                  alignItems: isMobile ? "flex-start" : "center",
-                  fontSize: "0.9rem",
-                  color: "#475569",
-                }}
-              >
-                <div>
-                  Page{" "}
-                  <span style={{ fontWeight: 600 }}>
-                    {page} / {totalPages}
-                  </span>
-                </div>
-
-                <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <button
-                    onClick={handlePrev}
-                    disabled={page === 1}
-                    style={{
-                      padding: "0.4rem 0.9rem",
-                      borderRadius: "999px",
-                      border: "1px solid #cbd5f5",
-                      backgroundColor: page === 1 ? "#e5e7eb" : "white",
-                      cursor: page === 1 ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={handleNext}
-                    disabled={page === totalPages}
-                    style={{
-                      padding: "0.4rem 0.9rem",
-                      borderRadius: "999px",
-                      border: "1px solid #cbd5f5",
-                      backgroundColor:
-                        page === totalPages ? "#e5e7eb" : "white",
-                      cursor:
-                        page === totalPages ? "not-allowed" : "pointer",
-                    }}
-                  >
-                    Next
-                  </button>
-                </div>
+            <div
+              style={{
+                marginTop: "1.6rem",
+                display: "flex",
+                flexDirection: isMobile ? "column" : "row",
+                gap: isMobile ? "0.75rem" : 0,
+                justifyContent: isMobile ? "flex-start" : "space-between",
+                alignItems: isMobile ? "flex-start" : "center",
+                fontSize: "0.9rem",
+                color: "#475569",
+              }}
+            >
+              <div>
+                Page{" "}
+                <span style={{ fontWeight: 600 }}>
+                  {page} / {totalPages}
+                </span>
               </div>
-            )}
+
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button
+                  onClick={handlePrev}
+                  disabled={page === 1}
+                  style={{
+                    padding: "0.4rem 0.9rem",
+                    borderRadius: "999px",
+                    border: "1px solid #cbd5f5",
+                    backgroundColor: page === 1 ? "#e5e7eb" : "white",
+                    cursor: page === 1 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Previous
+                </button>
+                <button
+                  onClick={handleNext}
+                  disabled={page === totalPages}
+                  style={{
+                    padding: "0.4rem 0.9rem",
+                    borderRadius: "999px",
+                    border: "1px solid #cbd5f5",
+                    backgroundColor: page === totalPages ? "#e5e7eb" : "white",
+                    cursor: page === totalPages ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
           </div>
         )}
+      </div>
+
+      {/* ticks exist to force rerender if needed */}
+      <div style={{ display: "none" }}>
+        {shortlistTick}-{compareTick}
       </div>
     </div>
   );
