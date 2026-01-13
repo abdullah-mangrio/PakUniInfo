@@ -85,6 +85,12 @@ function formatAdmissionCycles(cycles) {
 export default function AdminUniversities() {
   const navigate = useNavigate();
 
+ const handleLogout = () => {
+  localStorage.removeItem("adminToken");
+  navigate("/admin/login");
+  };
+
+
   const [universities, setUniversities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -466,21 +472,44 @@ export default function AdminUniversities() {
   return (
     <div>
       <header
-        style={{
-          marginBottom: "1.5rem",
-          display: "flex",
-          flexDirection: "column",
-          gap: "0.4rem",
-        }}
-      >
-        <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#0f172a" }}>
-          Admin – Manage Universities
-        </h1>
-        <p style={{ color: "#64748b", fontSize: "0.95rem", maxWidth: "40rem" }}>
-          Create, view, edit and delete universities in the PakUniInfo database.
-          This panel supports fees, admission info and images.
-        </p>
-      </header>
+  style={{
+    marginBottom: "1.5rem",
+    display: "flex",
+    flexDirection: isMobile ? "column" : "row",
+    alignItems: isMobile ? "flex-start" : "center",
+    justifyContent: "space-between",
+    gap: "0.8rem",
+  }}
+>
+  <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+    <h1 style={{ fontSize: "1.6rem", fontWeight: 700, color: "#0f172a", margin: 0 }}>
+      Admin – Manage Universities
+    </h1>
+    <p style={{ color: "#64748b", fontSize: "0.95rem", maxWidth: "40rem", margin: 0 }}>
+      Create, view, edit and delete universities in the PakUniInfo database.
+      This panel supports fees, admission info and images.
+    </p>
+  </div>
+
+  <button
+    onClick={handleLogout}
+    style={{
+      padding: "0.5rem 1.1rem",
+      borderRadius: "999px",
+      border: "1px solid rgba(148,163,184,0.8)",
+      backgroundColor: "white",
+      color: "#0f172a",
+      fontWeight: 600,
+      fontSize: "0.9rem",
+      cursor: "pointer",
+      boxShadow: "0 10px 22px rgba(15,23,42,0.12)",
+      width: isMobile ? "100%" : "auto",
+    }}
+  >
+    Logout
+  </button>
+</header>
+
 
       {/* CREATE FORM */}
       <section
