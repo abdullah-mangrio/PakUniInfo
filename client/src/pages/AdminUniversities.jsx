@@ -1,4 +1,5 @@
 // client/src/pages/AdminUniversities.jsx
+import API_BASE_URL from "../config/api";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -169,9 +170,10 @@ export default function AdminUniversities() {
       setError("");
 
       const res = await fetch(
-        `http://localhost:5000/api/universities?page=1&limit=${PAGE_LIMIT}&sortBy=name&sortOrder=asc`,
-        { headers: getAuthHeaders() }
+       `${API_BASE_URL}/api/universities?page=1&limit=${PAGE_LIMIT}&sortBy=name&sortOrder=asc`,
+       { headers: getAuthHeaders() }
       );
+
 
       if (res.status === 401 || res.status === 403) {
         localStorage.removeItem("adminToken");
@@ -272,7 +274,7 @@ export default function AdminUniversities() {
       setSubmitting(true);
       setError("");
 
-      const res = await fetch("http://localhost:5000/api/universities", {
+      const res = await fetch(`${API_BASE_URL}/api/universities`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(payload),
@@ -304,7 +306,7 @@ export default function AdminUniversities() {
     if (!confirmDelete) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/universities/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/universities/${id}`, {
         method: "DELETE",
         headers: getAuthHeaders(),
       });
@@ -434,7 +436,7 @@ export default function AdminUniversities() {
 
     try {
       setUpdating(true);
-      const res = await fetch(`http://localhost:5000/api/universities/${editId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/universities/${editId}`, {
         method: "PUT",
         headers: getAuthHeaders(),
         body: JSON.stringify(payload),
