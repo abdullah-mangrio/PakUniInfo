@@ -6,6 +6,9 @@ import { connectDB } from "./config.js";
 import universityRoutes from "./routes/universityRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 
+
+
+
 dotenv.config();
 
 const app = express();
@@ -51,6 +54,10 @@ app.use("/api/universities", universityRoutes);
 // Health check
 app.get("/", (req, res) => {
   res.send("PakUniInfo backend is running successfully!");
+});
+
+app.get("/api/health", (req, res) => {
+  res.status(200).send("OK");
 });
 
 // ---------- Start server AFTER DB connect ----------
