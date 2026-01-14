@@ -5,9 +5,10 @@ PakUniInfo is a full-stack web application that helps students explore universit
 ---
 
 ## 🔗 Live
-- **Frontend (Netlify):** https://sprightly-alfajores-d53cb5.netlify.app/
-- **Backend (Railway):** https://pakuniinfo-production.up.railway.app/
+- **Frontend (Netlify):** https://pakuniinfo.netlify.app/
+- **Backend (Render):** https://pakuniinfo-backend.onrender.com/
 - **Health Check:** `GET /api/health` → `OK` ✅
+
 
 ---
 
@@ -35,7 +36,7 @@ PakUniInfo is a full-stack web application that helps students explore universit
 - **Backend:** Node.js, Express (ES Modules)
 - **Database:** MongoDB Atlas (Mongoose)
 - **Authentication:** JWT (Admin)
-- **Deployment:** Netlify (frontend), Railway (backend)
+- **Deployment:** Netlify (frontend), Render (backend)
 
 ---
 
