@@ -1,5 +1,5 @@
 {
-  "name": "client",
+  "name": "pakuniinfo-client",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -24,5 +24,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "vite": "^7.2.2"
-  }
+  },
+  "author": "Abdullah Mangrio",
+  "license": "AGPL-3.0-only"
 }
