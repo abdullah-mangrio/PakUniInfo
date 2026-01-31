@@ -90,3 +90,19 @@ PakUniInfo/
 ├─ server.js                 # Express app entry
 └─ package.json              # Backend scripts & dependencies
 
+---
+
+## 📜 License
+This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
+
+If you run a modified version of this software as a network service (for example, a hosted web application),
+you must make the complete corresponding source code of your modifications available under the same license.
+
+Copyright (c) 2026 Abdullah Mangrio.
+
+---
+
+## ™️ Trademark & Branding
+The name **PakUniInfo** and its branding (logo, name, identity) are not granted under this license.
+You may not use the name or branding to imply official endorsement, affiliation, or an official fork
+without explicit permission.
