@@ -123,36 +123,36 @@ Information about admissions, programs, rankings, fees, and deadlines is often s
 
 ```
                          ┌─────────────────────────────────────────┐
-                         │             Client (Browser)             │
-                         │                                          │
+                         │             Client (Browser)            │
+                         │                                         │
                          │  ┌──────────────────────────────────┐   │
                          │  │   React + Vite  (Vercel)         │   │
                          │  │                                  │   │
                          │  │  /explore   /universities/:id    │   │
                          │  │  /shortlist /compare  /admin     │   │
                          │  └──────────────┬───────────────────┘   │
-                         │                 │ REST (JSON)            │
+                         │                 │ REST (JSON)           │
                          └─────────────────┼───────────────────────┘
                                            │
-                                           ▼
+                                                                            ▼
                          ┌─────────────────────────────────────────┐
-                         │        Node.js + Express  (Render)       │
-                         │                                          │
+                         │        Node.js + Express  (Render)      │
+                         │                                         │
                          │   ┌──────────┐   ┌────────────────────┐ │
-                         │   │  Routes  │   │   Auth Middleware   │ │
-                         │   │ /api/uni │   │   JWT Validation    │ │
+                         │   │  Routes  │   │   Auth Middleware  │ │
+                         │   │ /api/uni │   │   JWT Validation   │ │
                          │   └────┬─────┘   └────────────────────┘ │
-                         │        │                                  │
-                         │   ┌────▼──────────────┐                  │
-                         │   │   Controllers      │                  │
-                         │   │  Business Logic    │                  │
-                         │   └────┬──────────────┘                  │
+                         │        │                                │
+                         │   ┌────▼──────────────┐                 │
+                         │   │   Controllers     │                 │
+                         │   │  Business Logic   │                 │
+                         │   └────┬──────────────┘                 │
                          └────────┼────────────────────────────────┘
                                   │  Mongoose ODM
-                                  ▼
+                                                            ▼
                          ┌─────────────────────────────────────────┐
-                         │            MongoDB Atlas                  │
-                         │        (Cloud-hosted Database)           │
+                         │            MongoDB Atlas                │
+                         │        (Cloud-hosted Database)          │
                          └─────────────────────────────────────────┘
 ```
 
